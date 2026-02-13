@@ -53,5 +53,21 @@ This is a monorepo setup:
    npm run dev
    ```
 
+## 🌐 Deployment (Vercel)
+
+Since this is a monorepo, you must tell Vercel which folder to build.
+
+### 1. Frontend (React)
+When creating a new project on Vercel:
+- **Root Directory**: Set this to `frontend/drug-site`.
+- **Build Command**: `npm run build` (Automatically detected).
+- **Output Directory**: `dist` (Automatically detected).
+- **Environment Variables**: Add your `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+
+### 2. Backend (Express)
+For the backend, we recommend a platform like **Railway**, **Render**, or **DigitalOcean** (since Vercel is primarily for frontend/serverless). 
+- **Root Directory**: `backend`
+- **Start Command**: `node index.js`
+
 ## 📜 License
 MVP Internal Use Only - PharmaSearch Team.
