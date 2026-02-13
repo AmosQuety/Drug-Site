@@ -4,6 +4,7 @@ import { useAuth } from '../components/context/AuthContext';
 import { Plus, Trash2, Edit2, LogOut, Package, MapPin, Phone, MessageSquare, X, ShieldAlert, CheckCircle, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast, Toaster } from 'react-hot-toast';
+import { API_URL } from '../config';
 
 export const Dashboard = () => {
   const [myDrugs, setMyDrugs] = useState([]);
@@ -31,7 +32,7 @@ export const Dashboard = () => {
   const fetchMyDrugs = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await axios.get('http://localhost:5000/api/my-drugs', {
+      const res = await axios.get(`${API_URL}/api/my-drugs`, {
         headers: { Authorization: `Bearer ${session?.access_token}` }
       });
       setMyDrugs(res.data);
@@ -54,12 +55,12 @@ export const Dashboard = () => {
     
     try {
       if (editingDrug) {
-        await axios.patch(`http://localhost:5000/api/drugs/${editingDrug.id}`, 
+        await axios.patch(`${API_URL}/api/drugs/${editingDrug.id}`, 
           formData,
           { headers: { Authorization: `Bearer ${session?.access_token}` } }
         );
       } else {
-        await axios.post('http://localhost:5000/api/drugs', 
+        await axios.post(`${API_URL}/api/drugs`, 
           {
             ...formData,
             wholesaler_name: user?.user_metadata?.wholesaler_name || 'Your Business',
@@ -83,7 +84,7 @@ export const Dashboard = () => {
     
     const { data: { session } } = await supabase.auth.getSession();
     try {
-      await axios.delete(`http://localhost:5000/api/drugs/${id}`, {
+      await axios.delete(`${API_URL}/api/drugs/${id}`, {
         headers: { Authorization: `Bearer ${session?.access_token}` }
       });
       toast.success('Listing deleted');
@@ -97,7 +98,7 @@ export const Dashboard = () => {
     const newStatus = currentStatus === 'In stock' ? 'Out of stock' : 'In stock';
     const { data: { session } } = await supabase.auth.getSession();
     
-    await axios.patch(`http://localhost:5000/api/drugs/${id}`, 
+    await axios.patch(`${API_URL}/api/drugs/${id}`, 
       { availability: newStatus },
       { headers: { Authorization: `Bearer ${session?.access_token}` } }
     );

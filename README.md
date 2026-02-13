@@ -63,6 +63,7 @@ When creating a new project on Vercel:
 - **Build Command**: `npm run build` (Automatically detected).
 - **Output Directory**: `dist` (Automatically detected).
 - **Environment Variables**: Add your `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- **Environment Variables**: Add `VITE_API_URL` and set it to your **backend URL** (e.g., `https://your-backend.onrender.com`).
 
 ### 2. Backend (Express)
 For the backend, we recommend a platform like **Railway**, **Render**, or **DigitalOcean** (since Vercel is primarily for frontend/serverless). 

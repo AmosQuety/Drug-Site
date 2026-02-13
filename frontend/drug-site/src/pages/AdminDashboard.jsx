@@ -5,6 +5,7 @@ import { CheckCircle, ShieldAlert, LogOut, Search, UserCheck, Clock, Mail, MapPi
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import { API_URL } from '../config';
 
 export const AdminDashboard = () => {
   const [wholesalers, setWholesalers] = useState([]);
@@ -19,7 +20,7 @@ export const AdminDashboard = () => {
   const fetchWholesalers = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await axios.get('http://localhost:5000/api/admin/wholesalers', {
+      const response = await axios.get(`${API_URL}/api/admin/wholesalers`, {
         headers: { Authorization: `Bearer ${session?.access_token}` }
       });
       setWholesalers(response.data);
@@ -34,7 +35,7 @@ export const AdminDashboard = () => {
   const approveWholesaler = async (id) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      await axios.patch(`http://localhost:5000/api/admin/wholesalers/${id}/approve`, {}, {
+      await axios.patch(`${API_URL}/api/admin/wholesalers/${id}/approve`, {}, {
         headers: { Authorization: `Bearer ${session?.access_token}` }
       });
       toast.success("Wholesaler approved!");

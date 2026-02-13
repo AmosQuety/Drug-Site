@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { API_URL } from './config';
 import { useState, useEffect } from 'react';
 import { Search, Pill, Store, LogIn, Phone, MessageSquare, Activity, CheckCircle, MapPin, ShieldCheck } from 'lucide-react';
 import axios from 'axios';
@@ -115,6 +116,7 @@ const HomePage = () => {
 
 
 
+
 // 2. Search Results Page
 const ResultsPage = () => {
   const [results, setResults] = useState([]);
@@ -125,8 +127,8 @@ const ResultsPage = () => {
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/search?query=${query}`);
-        setResults(res.data);
+        const response = await axios.get(`${API_URL}/api/search?query=${query}`);
+        setResults(response.data);
       } catch (err) {
         console.error("Search failed", err);
       } finally {
