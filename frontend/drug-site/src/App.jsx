@@ -113,6 +113,8 @@ const HomePage = () => {
   );
 };
 
+
+
 // 2. Search Results Page
 const ResultsPage = () => {
   const [results, setResults] = useState([]);
