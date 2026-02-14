@@ -1,7 +1,7 @@
 import { Activity, useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../components/context/AuthContext';
-import { Plus, Trash2, Edit2, LogOut, Package, MapPin, Phone, MessageSquare, X, ShieldAlert, CheckCircle, Search } from 'lucide-react';
+import { Plus, Trash2, Edit2, LogOut, Package, MapPin, Phone, MessageSquare, X, ShieldAlert, CheckCircle, Search, Store } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast, Toaster } from 'react-hot-toast';
 import { API_URL } from '../config';
@@ -182,100 +182,183 @@ export const Dashboard = () => {
         </div>
       </nav>
 
-      <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full">
+      <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full">
+        {/* Supplier Profile Context Area */}
+        <div className="mb-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-8">
+            <div className="bg-blue-50 p-6 rounded-[24px]">
+              <Store className="w-12 h-12 text-blue-600" />
+            </div>
+            <div className="flex-1 text-center md:text-left">
+              <h2 className="text-3xl font-extrabold text-slate-900 mb-2">{user?.user_metadata?.business_name || 'Business Account'}</h2>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-slate-500 font-medium">
+                <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                  <MapPin className="w-4 h-4 text-blue-500" /> {user?.user_metadata?.city || 'City N/A'}
+                </span>
+                <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                   License: {user?.user_metadata?.license_number || 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Public Contact Details</h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-slate-50 p-2.5 rounded-xl">
+                  <Activity className="w-5 h-5 text-slate-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Contact Person</p>
+                  <p className="text-slate-900 font-bold">{user?.user_metadata?.contact_person || user?.user_metadata?.business_name || 'N/A'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="bg-slate-50 p-2.5 rounded-xl">
+                  <Phone className="w-5 h-5 text-slate-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Phone Number</p>
+                  <p className="text-slate-900 font-bold">{user?.user_metadata?.phone_number || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {isPending && (
-          <div className="mb-8 bg-amber-50 border border-amber-200 p-6 rounded-3xl flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
+          <div className="mb-10 bg-amber-50 border border-amber-200 p-6 rounded-[32px] flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
             <div className="bg-amber-100 p-3 rounded-2xl">
               <ShieldAlert className="w-8 h-8 text-amber-600" />
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-bold text-amber-900">Account Under Review</h3>
-              <p className="text-amber-700 text-sm font-medium">Our team is verifying your supplier license. You will be able to add new medicine listings once your account is approved.</p>
+              <p className="text-amber-700 text-sm font-medium">Your account is pending verification. You can list items once approved.</p>
             </div>
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        {/* Inventory Header & Add Button */}
+        <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mb-6 pt-4 border-t border-slate-100">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">My Medicine Listings</h2>
-            <p className="text-slate-500">Manage your stock availability and details</p>
+            <h2 className="text-2xl font-extrabold text-slate-900">Inventory Management</h2>
+            <p className="text-slate-500 font-medium">Manage your active stock listings and expiry dates.</p>
           </div>
           <button 
             disabled={isPending}
             onClick={() => { resetForm(); setShowAddModal(true); }}
-            className={`px-5 py-3 rounded-2xl flex items-center gap-2 shadow-lg shadow-blue-200 transition w-full sm:w-auto justify-center font-bold ${
+            className={`px-6 py-4 rounded-2xl flex items-center gap-2 shadow-xl shadow-blue-100 transition w-full sm:w-auto justify-center font-bold text-sm ${
               isPending ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}
           >
-            <Plus className="w-5 h-5" /> Add New Medicine
+            <Plus className="w-5 h-5" /> Add Medicine
           </button>
         </div>
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : myDrugs.length > 0 ? (
-          <div className="grid gap-4">
-            {myDrugs.map((drug) => (
-              <div key={drug.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between gap-6 hover:shadow-md transition">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold text-slate-900 uppercase tracking-tight">{drug.brand_name}</h3>
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                      drug.availability === 'In stock' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {drug.availability}
-                    </span>
-                  </div>
-                  <p className="text-slate-600 font-medium mb-1">{drug.generic_name} • {drug.strength} • {drug.dosage_form}</p>
-                  <p className="text-slate-400 text-sm mb-3">Mfr: {drug.manufacturer || 'N/A'} • Batch: {drug.batch_number || 'N/A'} • Exp: {drug.expiry_date || 'N/A'}</p>
-                  
-                  <div className="flex flex-wrap gap-4 text-sm text-slate-500">
-                    <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl font-medium">
-                      <MapPin className="w-4 h-4" /> {drug.city}
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl font-medium">
-                      <Phone className="w-4 h-4" /> {drug.contact_method}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 border-t md:border-t-0 pt-4 md:pt-0">
-                  <button 
-                    onClick={() => toggleAvailability(drug.id, drug.availability)}
-                    className={`flex-1 md:flex-none px-4 py-2.5 rounded-xl font-bold transition text-sm ${
-                      drug.availability === 'In stock' ? 'bg-slate-100 text-slate-700 hover:bg-red-50 hover:text-red-600' : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
-                  >
-                    {drug.availability === 'In stock' ? 'Mark Out of Stock' : 'Mark In Stock'}
-                  </button>
-                  <button 
-                    onClick={() => startEdit(drug)}
-                    className="p-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition border border-slate-100"
-                  >
-                    <Edit2 className="w-5 h-5" />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(drug.id)}
-                    className="p-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-red-50 hover:text-red-600 transition border border-slate-100"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="bg-white rounded-[32px] shadow-sm border border-slate-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-100">
+                    <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Brand Name</th>
+                    <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Batch / Stock</th>
+                    <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Generic & Details</th>
+                    <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dosage Form</th>
+                    <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Expiry Date</th>
+                    <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {myDrugs.map((drug) => (
+                    <tr key={drug.id} className="hover:bg-slate-50/30 transition group">
+                      <td className="px-6 py-5">
+                        <div className="font-extrabold text-slate-900">{drug.brand_name}</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">{drug.manufacturer || 'General'}</div>
+                      </td>
+                      <td className="px-6 py-5 text-center">
+                        <div className="text-xs font-bold text-slate-600 mb-1.5">{drug.batch_number || 'N/A'}</div>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-tighter ${
+                          drug.availability === 'In stock' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {drug.availability}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="text-sm font-semibold text-slate-700 line-clamp-1">{drug.generic_name}</div>
+                        <div className="text-xs text-slate-400 font-medium">{drug.strength}</div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="inline-flex items-center gap-1.5 bg-slate-50 px-3 py-1 rounded-xl text-xs font-bold text-slate-600 border border-slate-100">
+                          {drug.dosage_form}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className={`text-sm font-bold ${
+                          new Date(drug.expiry_date) < new Date() ? 'text-red-500' : 'text-slate-700'
+                        }`}>
+                          {drug.expiry_date ? new Date(drug.expiry_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
+                          <button 
+                            onClick={() => toggleAvailability(drug.id, drug.availability)}
+                            title={drug.availability === 'In stock' ? 'Mark Out of Stock' : 'Mark In Stock'}
+                            className="p-2 rounded-xl border border-slate-100 hover:bg-slate-50 transition"
+                          >
+                            <ShieldAlert className={`w-4 h-4 ${drug.availability === 'In stock' ? 'text-slate-400' : 'text-green-600'}`} />
+                          </button>
+                          <button 
+                            onClick={() => startEdit(drug)}
+                            className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition border border-slate-100"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(drug.id)}
+                            className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-red-50 hover:text-red-600 transition border border-slate-100"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-slate-200">
-             <div className="bg-slate-50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                <Package className="text-slate-300 w-8 h-8" />
+          <div className="text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-slate-100">
+             <div className="bg-slate-50 w-16 h-16 rounded-[24px] flex items-center justify-center mx-auto mb-4">
+                <Package className="text-slate-200 w-8 h-8" />
              </div>
-             <h3 className="text-lg font-bold text-slate-800">No medicines listed yet</h3>
-             <p className="text-slate-500 max-w-xs mx-auto mt-2">Add your first medicine listing to start receiving orders.</p>
+             <h3 className="text-xl font-bold text-slate-800">No Listings Found</h3>
+             <p className="text-slate-500 max-w-xs mx-auto mt-2 font-medium">Your inventory is empty. Start adding items to reach more customers.</p>
           </div>
         )}
       </main>
+
+      {/* Footer / Profile Action Section */}
+      <footer className="mt-auto bg-white border-t border-slate-100 py-8 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2 text-slate-400 font-medium text-xs">
+            <ShieldAlert className="w-4 h-4" /> Secure Supplier Interface v1.2
+          </div>
+          <button 
+            onClick={logout}
+            className="flex items-center gap-3 bg-red-50 text-red-600 px-8 py-3.5 rounded-[20px] font-extrabold text-sm hover:bg-red-100 transition"
+          >
+            <LogOut className="w-5 h-5" /> Logout from Session
+          </button>
+        </div>
+      </footer>
       
       {/* ADD/EDIT MODAL */}
       {showAddModal && (

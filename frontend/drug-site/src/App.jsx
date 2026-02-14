@@ -63,14 +63,6 @@ const HomePage = () => {
             <span className="text-xl font-bold text-slate-800 tracking-tight">MedicineSearch.app</span>
           </div>
           <div className="flex items-center gap-3">
-            <a href="/about" className="text-sm font-bold text-slate-500 hover:text-blue-600 transition">About</a>
-            <a 
-              href="mailto:support@medicinesearch.app" 
-              className="text-sm font-bold text-slate-500 hover:text-blue-600 transition"
-              onClick={() => toast('Contacting support...', { icon: '📧' })}
-            >
-              Need Help?
-            </a>
             {role === 'admin' && (
               <button 
                 onClick={() => navigate('/admin')}
@@ -83,13 +75,13 @@ const HomePage = () => {
               <>
                 <button 
                   onClick={() => navigate('/login')}
-                  className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition"
+                  className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl shadow-sm border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition"
                 >
                   <LogIn className="w-4 h-4 text-blue-600" /> Login
                 </button>
                 <button 
                   onClick={() => { window.location.href = '/login?signup=true'; }}
-                  className="hidden sm:flex items-center gap-2 bg-blue-600 px-3 py-2 rounded-xl shadow-md border border-blue-500 text-white text-sm font-bold hover:bg-blue-700 transition"
+                  className="hidden sm:flex items-center gap-2 bg-blue-600 px-5 py-2.5 rounded-xl shadow-md border border-blue-500 text-white text-sm font-bold hover:bg-blue-700 transition"
                 >
                   Join Us
                 </button>
@@ -97,7 +89,7 @@ const HomePage = () => {
             ) : role === 'supplier' ? (
               <button 
                 onClick={() => navigate('/dashboard')}
-                className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition"
+                className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl shadow-sm border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition"
               >
                 <Activity className="w-4 h-4 text-blue-600" /> Dashboard
               </button>
@@ -119,7 +111,25 @@ const HomePage = () => {
           <Autocomplete onSelect={handleSearch} />
         </div>
         
-        <p className="mt-8 text-slate-500 font-medium text-center">Find medicines and suppliers across Uganda instantly</p>
+        <p className="mt-8 text-slate-500 font-medium text-center mb-8">Find medicines and suppliers across Uganda instantly</p>
+
+        {/* Quick Links Row */}
+        <div className="flex items-center justify-center gap-8 border-t border-slate-200/60 pt-8 w-full max-w-md">
+          <a href="/about" className="text-slate-500 hover:text-blue-600 transition font-semibold text-sm hover:underline decoration-2 underline-offset-4">About</a>
+          <a 
+            href="mailto:support@pharmasearch.gmail.com" 
+            className="text-slate-500 hover:text-blue-600 transition font-semibold text-sm hover:underline decoration-2 underline-offset-4"
+            onClick={() => toast('Contacting support...', { icon: '📧' })}
+          >
+            Need Help?
+          </a>
+          <button 
+            onClick={() => navigate('/login?signup=true')}
+            className="text-slate-500 hover:text-blue-600 transition font-semibold text-sm hover:underline decoration-2 underline-offset-4"
+          >
+            Create Account
+          </button>
+        </div>
       </main>
 
       {/* Footer / Info */}
