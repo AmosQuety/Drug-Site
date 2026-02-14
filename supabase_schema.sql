@@ -1,5 +1,5 @@
 -- ==========================================
--- PharmaSearch Unified Schema (MVP)
+-- MedicineSearch.app Unified Schema (MVP)
 -- Includes: Drugs table, Safety Fields, and Fuzzy Search
 -- ==========================================
 
@@ -11,7 +11,13 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 -- This ensures 'id' and 'user_id' exist even on old tables.
 ALTER TABLE public."Drugs" ADD COLUMN IF NOT EXISTS id UUID DEFAULT uuid_generate_v4();
 ALTER TABLE public."Drugs" ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
-ALTER TABLE public."Drugs" ALTER COLUMN expiry_date TYPE DATE USING (NULLIF(expiry_date, '')::DATE);
+ALTER TABLE public."Drugs" ALTER COLUMN expiry_date TYPE DATE USING (
+  CASE 
+    WHEN expiry_date::TEXT IS NULL OR TRIM(expiry_date::TEXT) = '' OR expiry_date::TEXT = 'N/A' THEN NULL
+    WHEN expiry_date::TEXT ~ '^\d{4}-\d{2}-\d{2}$' THEN expiry_date::DATE
+    ELSE NULL 
+  END
+);
 
 -- CREATE TABLE block (for new projects)
 CREATE TABLE IF NOT EXISTS public."Drugs" (
@@ -44,11 +50,11 @@ CREATE INDEX IF NOT EXISTS drugs_generic_trgm_idx ON public."Drugs" USING GIN (g
 -- 4. RLS
 ALTER TABLE public."Drugs" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read access" ON public."Drugs";
-DROP POLICY IF EXISTS "Wholesalers can manage own drugs" ON public."Drugs";
+DROP POLICY IF EXISTS "Suppliers can manage own drugs" ON public."Drugs";
 
 CREATE POLICY "Allow public read access" ON public."Drugs" FOR SELECT USING (true);
-CREATE POLICY "Wholesalers can manage own drugs" ON public."Drugs" FOR ALL TO authenticated
-    USING (auth.uid() = user_id AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'wholesaler' AND (auth.jwt() -> 'user_metadata' ->> 'status') = 'approved');
+CREATE POLICY "Suppliers can manage own drugs" ON public."Drugs" FOR ALL TO authenticated
+    USING (auth.uid() = user_id AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'supplier' AND (auth.jwt() -> 'user_metadata' ->> 'status') = 'approved');
 
 -- 6. Stored Procedure for Autocomplete (Final Fix)
 DROP FUNCTION IF EXISTS search_drugs_autocomplete(TEXT);

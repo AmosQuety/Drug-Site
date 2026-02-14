@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children }) => {
     </div>
   );
 
-  if (!user || role !== 'wholesaler') {
+  if (!user || role !== 'supplier') {
     return <Navigate to="/login" replace />;
   }
 
@@ -60,9 +60,17 @@ const HomePage = () => {
         <div className="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <Pill className="w-6 h-6 text-blue-600" />
-            <span className="text-xl font-bold text-slate-800 tracking-tight">PharmaSearch</span>
+            <span className="text-xl font-bold text-slate-800 tracking-tight">MedicineSearch.app</span>
           </div>
           <div className="flex items-center gap-3">
+            <a href="/about" className="text-sm font-bold text-slate-500 hover:text-blue-600 transition">About</a>
+            <a 
+              href="mailto:support@medicinesearch.app" 
+              className="text-sm font-bold text-slate-500 hover:text-blue-600 transition"
+              onClick={() => toast('Contacting support...', { icon: '📧' })}
+            >
+              Need Help?
+            </a>
             {role === 'admin' && (
               <button 
                 onClick={() => navigate('/admin')}
@@ -72,13 +80,21 @@ const HomePage = () => {
               </button>
             )}
             {!user ? (
-              <button 
-                onClick={() => navigate('/login')}
-                className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition"
-              >
-                <LogIn className="w-4 h-4 text-blue-600" /> Login
-              </button>
-            ) : role === 'wholesaler' ? (
+              <>
+                <button 
+                  onClick={() => navigate('/login')}
+                  className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition"
+                >
+                  <LogIn className="w-4 h-4 text-blue-600" /> Login
+                </button>
+                <button 
+                  onClick={() => { window.location.href = '/login?signup=true'; }}
+                  className="hidden sm:flex items-center gap-2 bg-blue-600 px-3 py-2 rounded-xl shadow-md border border-blue-500 text-white text-sm font-bold hover:bg-blue-700 transition"
+                >
+                  Join Us
+                </button>
+              </>
+            ) : role === 'supplier' ? (
               <button 
                 onClick={() => navigate('/dashboard')}
                 className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition"
@@ -96,14 +112,14 @@ const HomePage = () => {
           <div className="bg-blue-600 p-3 rounded-2xl shadow-xl shadow-blue-200">
             <Pill className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">PharmaSearch</h1>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">MedicineSearch.app</h1>
         </div>
         
         <div className="w-full max-w-2xl">
           <Autocomplete onSelect={handleSearch} />
         </div>
         
-        <p className="mt-8 text-slate-500 font-medium text-center">Find medicines and wholesalers across Uganda instantly</p>
+        <p className="mt-8 text-slate-500 font-medium text-center">Find medicines and suppliers across Uganda instantly</p>
       </main>
 
       {/* Footer / Info */}
@@ -121,6 +137,8 @@ const HomePage = () => {
 const ResultsPage = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showGuestPrompt, setShowGuestPrompt] = useState(false);
+  const { user } = useAuth();
   const searchParams = new URLSearchParams(window.location.search);
   const query = searchParams.get('q');
 
@@ -129,6 +147,14 @@ const ResultsPage = () => {
       try {
         const response = await axios.get(`${API_URL}/api/search?query=${query}`);
         setResults(response.data);
+        
+        // Trigger non-intrusive prompt for guests after first search
+        if (!user && !localStorage.getItem('guestPromptShown')) {
+          setTimeout(() => {
+            setShowGuestPrompt(true);
+            localStorage.setItem('guestPromptShown', 'true');
+          }, 1500);
+        }
       } catch (err) {
         console.error("Search failed", err);
       } finally {
@@ -140,6 +166,39 @@ const ResultsPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+      {/* Guest Prompt Modal */}
+      {showGuestPrompt && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl border border-slate-100 relative">
+            <button 
+              onClick={() => setShowGuestPrompt(false)}
+              className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-50 transition"
+            >
+              <X className="w-5 h-5 text-slate-400" />
+            </button>
+            <div className="bg-blue-600 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-200">
+              <Activity className="text-white w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Enhance your experience</h3>
+            <p className="text-slate-500 font-medium mb-8">Create a free account to save your favorite medicines and track supplier updates.</p>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={() => window.location.href = '/login?signup=true'}
+                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-100"
+              >
+                Create Account
+              </button>
+              <button 
+                onClick={() => setShowGuestPrompt(false)}
+                className="w-full bg-slate-50 text-slate-600 py-4 rounded-2xl font-bold hover:bg-slate-100 transition"
+              >
+                Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <button onClick={() => window.history.back()} className="text-blue-600 font-medium">← Back</button>
@@ -159,38 +218,48 @@ const ResultsPage = () => {
                       {drug.availability}
                     </span>
                   </div>
-                  <p className="text-slate-700 font-semibold text-base mb-1">{drug.generic_name} • {drug.strength} • {drug.dosage_form}</p>
-                  <p className="text-slate-500 text-sm mb-4">
-                    Mfr: <span className="text-slate-800 font-medium">{drug.manufacturer || 'N/A'}</span> • 
+                  <p className="text-slate-500 text-sm mb-4 leading-relaxed">
+                    Generic: <span className="text-slate-800 font-medium">{drug.generic_name}</span> • 
+                    Strength: <span className="text-slate-800 font-medium">{drug.strength}</span> • 
+                    Form: <span className="text-slate-800 font-medium">{drug.dosage_form}</span><br/>
                     Batch: <span className="text-slate-800 font-medium">{drug.batch_number || 'N/A'}</span> • 
-                    Exp: <span className="text-slate-800 font-medium">{drug.expiry_date || 'N/A'}</span>
+                    Expires: <span className="text-red-600 font-bold">{drug.expiry_date || 'N/A'}</span>
                   </p>
                   
-                    <div className="flex flex-wrap gap-4 text-sm mt-auto">
-                      <div className="flex items-center gap-1.5 text-slate-600 font-bold bg-green-50 px-3 py-1.5 rounded-xl border border-green-100">
-                        <Store className="w-4 h-4 text-green-600" /> {drug.wholesaler_name}
-                        <CheckCircle className="w-3.5 h-3.5 text-green-600 ml-0.5" />
-                      </div>
-                      <div className="flex items-center gap-1.5 text-slate-600 font-medium bg-slate-50 px-3 py-1.5 rounded-xl">
-                        <MapPin className="w-4 h-4 text-blue-600" /> {drug.city}
-                      </div>
+                  <div className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Store className="w-4 h-4 text-slate-400" />
+                      <span className="text-sm font-bold text-slate-700">{drug.wholesaler_name}</span>
                     </div>
-                </div>
-                
-                <div className="flex gap-2 items-center md:flex-col md:justify-center">
-                  <a href={`tel:${drug.contact_method}`} className="flex-1 md:w-32 flex items-center justify-center gap-2 bg-slate-100 text-slate-700 px-4 py-3 rounded-2xl font-bold hover:bg-slate-200 transition">
-                    <Phone className="w-4 h-4" /> Call
-                  </a>
-                  <a href={`https://wa.me/${drug.contact_method}`} className="flex-1 md:w-32 flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-3 rounded-2xl font-bold hover:bg-green-700 transition">
-                    <MessageSquare className="w-4 h-4" /> WhatsApp
-                  </a>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-slate-400" />
+                      <span className="text-sm text-slate-500 font-medium">{drug.city}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 mt-auto">
+                    <a 
+                      href={`tel:${drug.contact_method}`}
+                      className="flex-1 min-w-[120px] flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg shadow-slate-200"
+                    >
+                      <Phone className="w-4 h-4" /> Call
+                    </a>
+                    <a 
+                      href={`https://wa.me/${drug.contact_method?.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 min-w-[120px] flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg shadow-green-100"
+                    >
+                      <MessageSquare className="w-4 h-4" /> WhatsApp
+                    </a>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-             <p className="text-slate-500">No wholesaler has this medicine in stock right now.</p>
+             <p className="text-slate-500">No supplier has this medicine in stock right now.</p>
           </div>
         )}
       </div>

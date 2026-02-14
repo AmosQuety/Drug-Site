@@ -43,9 +43,9 @@ const authenticateUser = async (req, res, next) => {
 };
 
 // --- MIDDLEWARE: Authorize Role ---
-const authorizeWholesaler = (req, res, next) => {
-  if (req.user?.user_metadata?.role !== 'wholesaler') {
-    return res.status(403).json({ error: 'Access denied: Wholesalers only' });
+const authorizeSupplier = (req, res, next) => {
+  if (req.user?.user_metadata?.role !== 'supplier') {
+    return res.status(403).json({ error: 'Access denied: Suppliers only' });
   }
   next();
 };
@@ -80,10 +80,10 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-// --- PRIVATE ROUTES (Wholesalers Only) ---
+// --- PRIVATE ROUTES (Suppliers Only) ---
 
 // 2. Get My Listings
-app.get('/api/my-drugs', authenticateUser, authorizeWholesaler, async (req, res) => {
+app.get('/api/my-drugs', authenticateUser, authorizeSupplier, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('Drugs')
@@ -98,7 +98,7 @@ app.get('/api/my-drugs', authenticateUser, authorizeWholesaler, async (req, res)
 });
 
 // 3. Add New Drug
-app.post('/api/drugs', authenticateUser, authorizeWholesaler, async (req, res) => {
+app.post('/api/drugs', authenticateUser, authorizeSupplier, async (req, res) => {
   const drugData = { ...req.body, user_id: req.user.id };
 
   try {
@@ -115,7 +115,7 @@ app.post('/api/drugs', authenticateUser, authorizeWholesaler, async (req, res) =
 });
 
 // 4. Update Drug Availability or Details
-app.patch('/api/drugs/:id', authenticateUser, authorizeWholesaler, async (req, res) => {
+app.patch('/api/drugs/:id', authenticateUser, authorizeSupplier, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -136,21 +136,21 @@ app.patch('/api/drugs/:id', authenticateUser, authorizeWholesaler, async (req, r
 // 5. Delete Drug Listing
 // --- ADMIN ROUTES ---
 
-// 6. Get All Wholesalers
-app.get('/api/admin/wholesalers', authenticateUser, authorizeAdmin, async (req, res) => {
+// 6. Get All Suppliers
+app.get('/api/admin/suppliers', authenticateUser, authorizeAdmin, async (req, res) => {
   try {
     const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
     if (error) throw error;
     
-    const wholesalers = users.filter(u => u.user_metadata?.role === 'wholesaler');
-    res.json(wholesalers);
+    const suppliers = users.filter(u => u.user_metadata?.role === 'supplier');
+    res.json(suppliers);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// 7. Approve Wholesaler
-app.patch('/api/admin/wholesalers/:id/approve', authenticateUser, authorizeAdmin, async (req, res) => {
+// 7. Approve Supplier
+app.patch('/api/admin/suppliers/:id/approve', authenticateUser, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
   try {
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
@@ -158,13 +158,13 @@ app.patch('/api/admin/wholesalers/:id/approve', authenticateUser, authorizeAdmin
       { user_metadata: { status: 'approved' } }
     );
     if (error) throw error;
-    res.json({ message: 'Wholesaler approved successfully', user: data.user });
+    res.json({ message: 'Supplier approved successfully', user: data.user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.delete('/api/drugs/:id', authenticateUser, authorizeWholesaler, async (req, res) => {
+app.delete('/api/drugs/:id', authenticateUser, authorizeSupplier, async (req, res) => {
   const { id } = req.params;
 
   try {

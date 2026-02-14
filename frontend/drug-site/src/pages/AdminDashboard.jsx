@@ -8,38 +8,38 @@ import { supabase } from '../lib/supabase';
 import { API_URL } from '../config';
 
 export const AdminDashboard = () => {
-  const [wholesalers, setWholesalers] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchWholesalers();
+    fetchSuppliers();
   }, []);
 
-  const fetchWholesalers = async () => {
+  const fetchSuppliers = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await axios.get(`${API_URL}/api/admin/wholesalers`, {
+      const response = await axios.get(`${API_URL}/api/admin/suppliers`, {
         headers: { Authorization: `Bearer ${session?.access_token}` }
       });
-      setWholesalers(response.data);
+      setSuppliers(response.data || []);
     } catch (err) {
-      toast.error("Failed to fetch wholesalers");
+      toast.error("Failed to fetch suppliers");
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const approveWholesaler = async (id) => {
+  const approveSupplier = async (id) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      await axios.patch(`${API_URL}/api/admin/wholesalers/${id}/approve`, {}, {
+      await axios.patch(`${API_URL}/api/admin/suppliers/${id}/approve`, {}, {
         headers: { Authorization: `Bearer ${session?.access_token}` }
       });
-      toast.success("Wholesaler approved!");
-      fetchWholesalers(); // Refresh list
+      toast.success("Supplier approved!");
+      fetchSuppliers(); // Refresh list
     } catch (err) {
       toast.error("Approval failed");
     }
@@ -81,8 +81,8 @@ export const AdminDashboard = () => {
 
       <main className="max-w-6xl mx-auto p-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Wholesaler Verification</h2>
-          <p className="text-slate-500 font-medium">Manage and approve business accounts for the PharmaSearch network.</p>
+          <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Supplier Verification</h2>
+          <p className="text-slate-500 font-medium">Manage and approve business accounts for the MedicineSearch.app network.</p>
         </div>
 
         <div className="bg-white rounded-[32px] shadow-xl border border-slate-100 overflow-hidden">
@@ -98,26 +98,26 @@ export const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {wholesalers.map((wholesaler) => (
-                  <tr key={wholesaler.id} className="hover:bg-slate-50/50 transition">
+                {suppliers.map((supplier) => (
+                  <tr key={supplier.id} className="hover:bg-slate-50/50 transition">
                     <td className="px-8 py-6">
-                      <div className="font-bold text-slate-900 text-lg mb-1">{wholesaler.user_metadata?.wholesaler_name || 'No Name'}</div>
+                      <div className="font-bold text-slate-900 text-lg mb-1">{supplier.user_metadata?.business_name || 'No Name'}</div>
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2 text-slate-500 text-sm">
-                          <Mail className="w-3.5 h-3.5" /> {wholesaler.email}
+                          <Mail className="w-3.5 h-3.5" /> {supplier.email}
                         </div>
                         <div className="flex items-center gap-2 text-slate-500 text-sm">
-                          <MapPin className="w-3.5 h-3.5" /> {wholesaler.user_metadata?.city || 'N/A'}
+                          <MapPin className="w-3.5 h-3.5" /> {supplier.user_metadata?.city || 'N/A'}
                         </div>
                       </div>
                     </td>
                     <td className="px-8 py-6">
                       <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-xl font-bold text-sm">
-                        License: {wholesaler.user_metadata?.license_number || 'MISSING'}
+                        License: {supplier.user_metadata?.license_number || 'MISSING'}
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      {wholesaler.user_metadata?.status === 'approved' ? (
+                      {supplier.user_metadata?.status === 'approved' ? (
                         <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
                           <UserCheck className="w-3.5 h-3.5" /> Verified
                         </span>
@@ -128,9 +128,9 @@ export const AdminDashboard = () => {
                       )}
                     </td>
                     <td className="px-8 py-6 text-right">
-                      {wholesaler.user_metadata?.status !== 'approved' && (
+                      {supplier.user_metadata?.status !== 'approved' && (
                         <button 
-                          onClick={() => approveWholesaler(wholesaler.id)}
+                          onClick={() => approveSupplier(supplier.id)}
                           className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition"
                         >
                           Approve
@@ -145,15 +145,15 @@ export const AdminDashboard = () => {
 
           {/* Mobile View - Cards */}
           <div className="md:hidden divide-y divide-slate-100">
-            {wholesalers.map((wholesaler) => (
-              <div key={wholesaler.id} className="p-6">
+            {suppliers.map((supplier) => (
+              <div key={supplier.id} className="p-6">
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-start">
                     <div>
-                      <div className="font-bold text-slate-900 text-lg">{wholesaler.user_metadata?.wholesaler_name || 'No Name'}</div>
-                      <div className="text-slate-500 text-sm">{wholesaler.email}</div>
+                      <div className="font-bold text-slate-900 text-lg">{supplier.user_metadata?.business_name || 'No Name'}</div>
+                      <div className="text-slate-500 text-sm">{supplier.email}</div>
                     </div>
-                    {wholesaler.user_metadata?.status === 'approved' ? (
+                    {supplier.user_metadata?.status === 'approved' ? (
                       <span className="bg-green-50 text-green-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Verified</span>
                     ) : (
                       <span className="bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Pending</span>
@@ -161,16 +161,16 @@ export const AdminDashboard = () => {
                   </div>
                   
                   <div className="flex items-center gap-2 text-slate-600 text-sm font-medium">
-                    <MapPin className="w-4 h-4" /> {wholesaler.user_metadata?.city || 'N/A'}
+                    <MapPin className="w-4 h-4" /> {supplier.user_metadata?.city || 'N/A'}
                   </div>
 
                   <div className="bg-blue-50 text-blue-700 px-4 py-3 rounded-2xl font-bold text-sm">
-                    License: {wholesaler.user_metadata?.license_number || 'MISSING'}
+                    License: {supplier.user_metadata?.license_number || 'MISSING'}
                   </div>
 
-                  {wholesaler.user_metadata?.status !== 'approved' && (
+                  {supplier.user_metadata?.status !== 'approved' && (
                     <button 
-                      onClick={() => approveWholesaler(wholesaler.id)}
+                      onClick={() => approveSupplier(supplier.id)}
                       className="w-full bg-blue-600 text-white px-6 py-4 rounded-2xl font-bold hover:bg-blue-700 transition"
                     >
                       Approve Business
@@ -181,9 +181,9 @@ export const AdminDashboard = () => {
             ))}
           </div>
 
-          {wholesalers.length === 0 && (
+          {suppliers.length === 0 && (
             <div className="px-8 py-20 text-center text-slate-400 font-medium italic">
-              No wholesalers registered yet.
+              No suppliers registered yet.
             </div>
           )}
         </div>

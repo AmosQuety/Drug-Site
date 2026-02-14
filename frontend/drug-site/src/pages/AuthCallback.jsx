@@ -26,7 +26,7 @@ export const AuthCallback = () => {
         if (!role) {
           // New user (Google/Social) with no role selected yet
           navigate('/login');
-        } else if (role === 'wholesaler') {
+        } else if (role === 'supplier') {
           navigate('/dashboard');
         } else {
           navigate('/');

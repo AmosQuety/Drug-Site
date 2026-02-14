@@ -15,6 +15,7 @@ export const Dashboard = () => {
   const { user, logout } = useAuth();
   const status = user?.user_metadata?.status || 'approved'; 
   const isPending = status === 'pending';
+  const role = user?.user_metadata?.role;
 
   const [formData, setFormData] = useState({
     brand_name: '',
@@ -63,7 +64,7 @@ export const Dashboard = () => {
         await axios.post(`${API_URL}/api/drugs`, 
           {
             ...formData,
-            wholesaler_name: user?.user_metadata?.wholesaler_name || 'Your Business',
+            wholesaler_name: user?.user_metadata?.business_name || user?.user_metadata?.wholesaler_name || 'Your Business',
             city: user?.user_metadata?.city || 'Unknown'
           },
           { headers: { Authorization: `Bearer ${session?.access_token}` } }
@@ -150,7 +151,7 @@ export const Dashboard = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-slate-800">Wholesaler Portal</h1>
+              <h1 className="text-lg font-bold text-slate-800">Supplier Portal</h1>
               {isPending ? (
                 <span className="flex items-center gap-1 bg-amber-50 text-amber-600 text-[10px] px-2 py-0.5 rounded-full font-bold border border-amber-100">
                   <Activity className="w-3 h-3" /> PENDING
@@ -161,7 +162,7 @@ export const Dashboard = () => {
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 font-medium">{user?.user_metadata?.wholesaler_name || user?.email}</p>
+            <p className="text-xs text-slate-500 font-medium">{user?.user_metadata?.business_name || user?.email}</p>
           </div>
         </div>
 
@@ -189,7 +190,7 @@ export const Dashboard = () => {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-bold text-amber-900">Account Under Review</h3>
-              <p className="text-amber-700 text-sm font-medium">Our team is verifying your wholesaler license. You will be able to add new medicine listings once your account is approved.</p>
+              <p className="text-amber-700 text-sm font-medium">Our team is verifying your supplier license. You will be able to add new medicine listings once your account is approved.</p>
             </div>
           </div>
         )}

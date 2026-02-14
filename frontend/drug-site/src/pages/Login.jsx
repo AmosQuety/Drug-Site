@@ -9,22 +9,25 @@ export const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState('pharmacist');
+  const [selectedRole, setSelectedRole] = useState('buyer');
   const [licenseNumber, setLicenseNumber] = useState('');
-  const [wholesalerName, setWholesalerName] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [city, setCity] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [regNumber, setRegNumber] = useState('');
+  const [cadre, setCadre] = useState('');
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
   const { user, role } = useAuth();
 
   useEffect(() => {
-    if (user && role === 'wholesaler') {
+    if (user && role === 'supplier') {
       navigate('/dashboard');
     }
   }, [user, role, navigate]);
 
-  if (user && role !== 'wholesaler' && !isSignUp) {
+  if (user && role !== 'supplier' && !isSignUp) {
     const hasRole = !!role;
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
@@ -38,30 +41,30 @@ export const Login = () => {
           <p className="text-slate-500 mb-8 font-medium">
             {hasRole 
               ? <>You are logged in as <span className="text-blue-600 underline">{user.email}</span></>
-              : "To continue, please select if you are a Pharmacist or a Wholesaler."}
+              : "To continue, please select if you are a Buyer or a Supplier."}
           </p>
           <div className="space-y-4">
             {!hasRole && (
               <button 
                 onClick={() => {
-                  supabase.auth.updateUser({ data: { role: 'pharmacist' } }).then(() => {
-                    toast.success('Account set as Pharmacist');
+                  supabase.auth.updateUser({ data: { role: 'buyer', status: 'approved' } }).then(() => {
+                    toast.success('Account set as Buyer');
                     window.location.href = '/';
                   });
                 }}
                 className="w-full bg-slate-800 text-white p-4 rounded-2xl font-bold hover:bg-slate-900 transition"
               >
-                I am a Pharmacist
+                I am a Buyer
               </button>
             )}
             <button 
               onClick={() => {
-                setSelectedRole('wholesaler');
+                setSelectedRole('supplier');
                 setIsSignUp(true);
               }}
               className="w-full bg-blue-600 text-white p-4 rounded-2xl font-bold hover:bg-blue-700 transition"
             >
-              {hasRole ? 'Register as Wholesaler' : 'I am a Wholesaler'}
+              {hasRole ? 'Register as Supplier' : 'I am a Supplier'}
             </button>
             <button 
               onClick={() => { supabase.auth.signOut(); window.location.reload(); }}
@@ -81,23 +84,27 @@ export const Login = () => {
 
     try {
       if (isSignUp) {
+        const metadata = {
+          role: selectedRole,
+          ...(selectedRole === 'supplier' ? {
+            business_name: businessName,
+            city: city,
+            license_number: licenseNumber,
+            phone_number: phoneNumber,
+            status: 'pending'
+          } : {
+            professional_reg_no: regNumber,
+            cadre: cadre,
+            status: 'approved' // Buyers don't need manual approval for now
+          })
+        };
+
         if (user) {
-          // If already logged in, update metadata instead of signing up
-          const { error } = await supabase.auth.updateUser({
-            data: {
-              role: selectedRole,
-              ...(selectedRole === 'wholesaler' ? {
-                wholesaler_name: wholesalerName,
-                city: city,
-                license_number: licenseNumber,
-                status: 'pending'
-              } : {})
-            }
-          });
+          const { error } = await supabase.auth.updateUser({ data: metadata });
           if (error) throw error;
           toast.success('Profile updated successfully!');
-          if (selectedRole === 'wholesaler') {
-            setIsSignUp(false); // Go back to the welcome/dashboard redirect check
+          if (selectedRole === 'supplier') {
+            setIsSignUp(false);
           } else {
             navigate('/');
           }
@@ -105,20 +112,10 @@ export const Login = () => {
           const { error } = await supabase.auth.signUp({
             email,
             password,
-            options: {
-              data: {
-                role: selectedRole,
-                ...(selectedRole === 'wholesaler' ? {
-                  wholesaler_name: wholesalerName,
-                  city: city,
-                  license_number: licenseNumber,
-                  status: 'pending' // MVP: Wholesalers start as pending
-                } : {})
-              }
-            }
+            options: { data: metadata }
           });
           if (error) throw error;
-          toast.success('Signup successful! Please check your email for verification.');
+          toast.success('Signup successful! Please check your email.');
           setIsSignUp(false);
         }
       } else {
@@ -164,45 +161,45 @@ export const Login = () => {
           <h2 className="text-2xl font-bold text-slate-800">
             {isSignUp 
               ? (user ? `Complete ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} Profile` : `Create ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} Account`)
-              : 'Wholesaler Access'}
+              : `${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} Login`}
           </h2>
           <p className="text-slate-500 text-sm mt-2 text-center">
             {isSignUp 
-              ? (selectedRole === 'wholesaler' ? 'Join our network to list your medicine inventory' : 'Set up your pharmacist account to save favorites and more')
-              : 'Sign in to manage your inventory and orders'}
+              ? (selectedRole === 'supplier' ? 'Join our network to list your medicine inventory' : 'Set up your buyer account to access stock and more')
+              : `Sign in as a ${selectedRole} to manage your account`}
           </p>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
-          {isSignUp && !user && (
+          {!user && (
             <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl mb-2">
               <button
                 type="button"
-                onClick={() => setSelectedRole('pharmacist')}
+                onClick={() => setSelectedRole('buyer')}
                 className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition ${
-                  selectedRole === 'pharmacist' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  selectedRole === 'buyer' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
-                Pharmacist
+                Buyer
               </button>
               <button
                 type="button"
-                onClick={() => setSelectedRole('wholesaler')}
+                onClick={() => setSelectedRole('supplier')}
                 className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition ${
-                  selectedRole === 'wholesaler' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  selectedRole === 'supplier' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
-                Wholesaler
+                Supplier
               </button>
             </div>
           )}
 
-          {isSignUp && selectedRole === 'wholesaler' && (
+          {isSignUp && selectedRole === 'supplier' && (
             <>
               <input 
-                type="text" placeholder="Wholesaler Business Name" required
+                type="text" placeholder="Business Name" required
                 className="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 transition"
-                onChange={(e) => setWholesalerName(e.target.value)}
+                onChange={(e) => setBusinessName(e.target.value)}
               />
               <div className="grid grid-cols-2 gap-4">
                 <input 
@@ -216,6 +213,33 @@ export const Login = () => {
                   onChange={(e) => setLicenseNumber(e.target.value)}
                 />
               </div>
+              <input 
+                type="text" placeholder="Contact Phone Number" required
+                className="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 transition"
+                onChange={(e) => setPhoneNumber(e.target.value)}
+              />
+            </>
+          )}
+
+          {isSignUp && selectedRole === 'buyer' && (
+            <>
+              <input 
+                type="text" placeholder="Professional Registration Number" required
+                className="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 transition"
+                onChange={(e) => setRegNumber(e.target.value)}
+              />
+              <select 
+                required
+                className="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 transition"
+                onChange={(e) => setCadre(e.target.value)}
+              >
+                <option value="">Select Cadre</option>
+                <option value="Pharmacist">Pharmacist</option>
+                <option value="Pharmacy Technician">Pharmacy Technician</option>
+                <option value="Nurse">Nurse</option>
+                <option value="Medical Doctor">Medical Doctor</option>
+                <option value="Other">Other</option>
+              </select>
             </>
           )}
           
@@ -224,6 +248,13 @@ export const Login = () => {
             className="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 transition"
             onChange={(e) => setEmail(e.target.value)}
           />
+          {!isSignUp && (
+            <input 
+              type="text" 
+              placeholder={selectedRole === 'buyer' ? "Professional Registration No" : "Business License Number"}
+              className="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 transition"
+            />
+          )}
           <input 
             type="password" placeholder="Password" required
             className="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 transition"
@@ -262,7 +293,7 @@ export const Login = () => {
         <div className="mt-8 pt-6 border-t border-slate-100 text-center space-y-3">
           <div>
             <p className="text-slate-600 text-sm">
-              {isSignUp ? 'Already have an account?' : 'Want to join as a wholesaler?'}
+              {isSignUp ? 'Already have an account?' : 'Want to join as a supplier?'}
             </p>
             <button 
               onClick={() => setIsSignUp(!isSignUp)}
