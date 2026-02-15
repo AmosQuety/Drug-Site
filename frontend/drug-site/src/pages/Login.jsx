@@ -308,7 +308,7 @@ export const Login = () => {
               onClick={() => navigate('/')}
               className="text-slate-400 text-sm hover:text-slate-600 transition flex items-center justify-center gap-1 mx-auto"
             >
-              <Search className="w-4 h-4" /> Back to Medicine Search
+              <Search className="w-4 h-4" /> Back to PharmaSearch
             </button>
           </div>
         </div>

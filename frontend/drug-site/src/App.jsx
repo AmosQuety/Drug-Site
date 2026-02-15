@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { API_URL } from './config';
 import { useState, useEffect } from 'react';
-import { Search, Pill, Store, LogIn, Phone, MessageSquare, Activity, CheckCircle, MapPin, ShieldCheck } from 'lucide-react';
+import { Search, Pill, Store, LogIn, Phone, MessageSquare, Activity, CheckCircle, MapPin, ShieldCheck, X } from 'lucide-react';
 import axios from 'axios';
 import { Navigate } from 'react-router-dom';
 import { Login } from './pages/Login';
@@ -9,8 +9,9 @@ import { Dashboard } from './pages/Dashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AuthCallback } from './pages/AuthCallback';
 import { Autocomplete } from './components/Autocomplete';
+import { About } from './pages/About';
 import { AuthProvider, useAuth } from './components/context/AuthContext';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 
 const ProtectedRoute = ({ children }) => {
   const { user, role, loading } = useAuth();
@@ -60,7 +61,7 @@ const HomePage = () => {
         <div className="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <Pill className="w-6 h-6 text-blue-600" />
-            <span className="text-xl font-bold text-slate-800 tracking-tight">MedicineSearch.app</span>
+            <span className="text-xl font-bold text-slate-800 tracking-tight">PharmaSearch</span>
           </div>
           <div className="flex items-center gap-3">
             {role === 'admin' && (
@@ -104,7 +105,7 @@ const HomePage = () => {
           <div className="bg-blue-600 p-3 rounded-2xl shadow-xl shadow-blue-200">
             <Pill className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">MedicineSearch.app</h1>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">PharmaSearch</h1>
         </div>
         
         <div className="w-full max-w-2xl">
@@ -147,6 +148,7 @@ const HomePage = () => {
 const ResultsPage = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showGuestPrompt, setShowGuestPrompt] = useState(false);
   const { user } = useAuth();
   const searchParams = new URLSearchParams(window.location.search);
@@ -154,8 +156,11 @@ const ResultsPage = () => {
 
   useEffect(() => {
     const fetchResults = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const response = await axios.get(`${API_URL}/api/search?query=${query}`);
+        // Added timeout to prevent infinite loading if backend is sleeping
+        const response = await axios.get(`${API_URL}/api/search?query=${query}`, { timeout: 15000 });
         setResults(response.data);
         
         // Trigger non-intrusive prompt for guests after first search
@@ -167,11 +172,13 @@ const ResultsPage = () => {
         }
       } catch (err) {
         console.error("Search failed", err);
+        setError("Unable to connect to the server. Please check your connection or try again later.");
       } finally {
         setLoading(false);
       }
     };
-    fetchResults();
+    if (query) fetchResults();
+    else setLoading(false);
   }, [query]);
 
   return (
@@ -216,53 +223,100 @@ const ResultsPage = () => {
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-slate-500">Searching inventory...</div>
+          <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
+             <div className="inline-block animate-spin mb-4">
+                <Activity className="w-8 h-8 text-blue-600" />
+             </div>
+             <p className="text-slate-500 font-medium">Searching verified inventory...</p>
+          </div>
+        ) : error ? (
+           <div className="text-center py-20 bg-white rounded-3xl border border-red-100 shadow-sm">
+              <div className="inline-flex bg-red-50 p-3 rounded-2xl mb-4">
+                 <ShieldAlert className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Search Error</h3>
+              <p className="text-slate-500 max-w-sm mx-auto">{error}</p>
+           </div>
         ) : results.length > 0 ? (
           <div className="grid gap-4">
             {results.map((drug) => (
-              <div key={drug.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between gap-5 transition hover:shadow-md">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <h3 className="text-xl font-bold text-slate-900 uppercase tracking-tight">{drug.brand_name}</h3>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${drug.availability === 'In stock' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {drug.availability}
-                    </span>
+              <div key={drug.id} className="bg-white p-6 rounded-[24px] shadow-sm border border-slate-100 transition hover:shadow-md flex flex-col gap-4">
+                {/* Header: Brand, Generic, Status */}
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight mb-1">{drug.brand_name}</h3>
+                    <p className="text-slate-500 font-semibold text-sm flex items-center gap-2">
+                      <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs uppercase tracking-wider font-bold">Generic</span> 
+                      {drug.generic_name}
+                    </p>
                   </div>
-                  <p className="text-slate-500 text-sm mb-4 leading-relaxed">
-                    Generic: <span className="text-slate-800 font-medium">{drug.generic_name}</span> • 
-                    Strength: <span className="text-slate-800 font-medium">{drug.strength}</span> • 
-                    Form: <span className="text-slate-800 font-medium">{drug.dosage_form}</span><br/>
-                    Batch: <span className="text-slate-800 font-medium">{drug.batch_number || 'N/A'}</span> • 
-                    Expires: <span className="text-red-600 font-bold">{drug.expiry_date || 'N/A'}</span>
-                  </p>
-                  
-                  <div className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Store className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm font-bold text-slate-700">{drug.wholesaler_name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm text-slate-500 font-medium">{drug.city}</span>
-                    </div>
-                  </div>
+                  <span className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide ${drug.availability === 'In stock' ? 'bg-green-50 text-green-700 ring-1 ring-green-100' : 'bg-red-50 text-red-700 ring-1 ring-red-100'}`}>
+                    {drug.availability}
+                  </span>
+                </div>
 
-                  <div className="flex flex-wrap gap-3 mt-auto">
-                    <a 
-                      href={`tel:${drug.contact_method}`}
-                      className="flex-1 min-w-[120px] flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg shadow-slate-200"
-                    >
-                      <Phone className="w-4 h-4" /> Call
-                    </a>
-                    <a 
-                      href={`https://wa.me/${drug.contact_method?.replace(/\D/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 min-w-[120px] flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg shadow-green-100"
-                    >
-                      <MessageSquare className="w-4 h-4" /> WhatsApp
-                    </a>
-                  </div>
+                {/* Grid for Key Details */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 py-4 border-y border-slate-50 my-2">
+                   <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
+                         <Activity className="w-5 h-5" />
+                      </div>
+                      <div>
+                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Strength</p>
+                         <p className="font-bold text-slate-800">{drug.strength}</p>
+                      </div>
+                   </div>
+                   <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-50 rounded-xl text-purple-600">
+                         <Pill className="w-5 h-5" />
+                      </div>
+                      <div>
+                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Dosage Form</p>
+                         <p className="font-bold text-slate-800">{drug.dosage_form}</p>
+                      </div>
+                   </div>
+                   <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-xl ${new Date(drug.expiry_date) < new Date() ? 'bg-red-50 text-red-600' : 'bg-orange-50 text-orange-600'}`}>
+                         <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Expiry Date</p>
+                         <p className={`font-bold ${new Date(drug.expiry_date) < new Date() ? 'text-red-600' : 'text-slate-800'}`}>
+                            {drug.expiry_date || 'N/A'}
+                         </p>
+                      </div>
+                   </div>
+                </div>
+                
+                {/* Supplier & Location - More Prominent */}
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                    <div>
+                       <div className="flex items-center gap-2 mb-1">
+                          <Store className="w-5 h-5 text-blue-600" />
+                          <span className="text-lg font-bold text-slate-900">{drug.wholesaler_name}</span>
+                       </div>
+                       <div className="flex items-center gap-2 text-sm font-medium text-slate-500 ml-0.5">
+                          <MapPin className="w-4 h-4" /> {drug.city}
+                       </div>
+                    </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 mt-2">
+                  <a 
+                    href={`tel:${drug.contact_method}`}
+                    className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-3.5 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg shadow-slate-200 active:scale-95"
+                  >
+                    <Phone className="w-4 h-4" /> Call Supplier
+                  </a>
+                  <a 
+                    href={`https://wa.me/${drug.contact_method?.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-3.5 rounded-xl font-bold hover:bg-green-700 transition shadow-lg shadow-green-100 active:scale-95"
+                  >
+                    <MessageSquare className="w-4 h-4" /> WhatsApp
+                  </a>
                 </div>
               </div>
             ))}
@@ -288,6 +342,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/search" element={<ResultsPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/about" element={<About />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           
           <Route 

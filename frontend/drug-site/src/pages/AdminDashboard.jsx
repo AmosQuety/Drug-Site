@@ -54,24 +54,24 @@ export const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Navbar */}
-      <nav className="bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
+      <nav className="bg-white border-b border-slate-200 px-4 md:px-8 py-4 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="bg-slate-900 p-2 rounded-xl">
               <ShieldAlert className="text-white w-5 h-5" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Admin Command Center</h1>
+            <h1 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">Admin Command Center</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
             <button 
               onClick={() => navigate('/')} 
-              className="text-slate-500 hover:text-slate-800 font-bold transition flex items-center gap-2"
+              className="text-slate-500 hover:text-slate-800 font-bold transition flex items-center gap-2 text-sm"
             >
-              <Search className="w-4 h-4" /> Exit Admin
+              <Search className="w-4 h-4" /> Exit
             </button>
             <button 
               onClick={() => { supabase.auth.signOut(); navigate('/'); }}
-              className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-200 transition flex items-center gap-2"
+              className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-200 transition flex items-center gap-2 text-sm"
             >
               <LogOut className="w-4 h-4" /> Logout
             </button>
