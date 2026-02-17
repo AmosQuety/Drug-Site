@@ -15,8 +15,6 @@ import { AuthProvider, useAuth } from './components/context/AuthContext';
 import { Toaster, toast } from 'react-hot-toast';
 import { supabase } from './lib/supabase';
 
-console.log('Supabase initialized in App.jsx:', !!supabase);
-
 // Role Based Dashboard Wrapper
 const RoleBasedDashboard = () => {
   const { role } = useAuth();

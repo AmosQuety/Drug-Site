@@ -335,5 +335,6 @@ app.delete('/api/follow/:supplier_id', authenticateUser, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// For debugging
 
 app.listen(PORT, () => console.log(`🚀 Server on http://localhost:${PORT}`));

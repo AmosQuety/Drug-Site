@@ -40,17 +40,15 @@ export const Autocomplete = ({ onSelect, defaultValue = '' }) => {
       abortControllerRef.current = new AbortController();
 
       try {
-        console.log("🔍 Autocomplete searching for:", input);
         const { data, error } = await supabase.rpc('search_drugs_autocomplete', {
           search_term: input
         });
 
         if (error) {
-          console.error("❌ Supabase RPC Error:", error);
+          console.error("Autocomplete error:", error);
           throw error;
         }
         
-        console.log("✅ Results found:", data?.length || 0);
         setSuggestions(data || []);
         setIsOpen(true);
         setSelectedIndex(-1);
