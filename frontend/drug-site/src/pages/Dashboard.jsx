@@ -12,6 +12,12 @@ export const Dashboard = () => {
   const [editingDrug, setEditingDrug] = useState(null);
   const [loading, setLoading] = useState(true);
   
+  // Profile & Security Logic
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [profileData, setProfileData] = useState({ business_name: '', city: '', phone_number: '' });
+  const [newPassword, setNewPassword] = useState('');
+  
   const { user, logout } = useAuth();
   const status = user?.user_metadata?.status || 'approved'; 
   const isPending = status === 'pending';
@@ -41,6 +47,16 @@ export const Dashboard = () => {
   };
 
   useEffect(() => { fetchMyDrugs(); }, []);
+  
+  useEffect(() => {
+    if (user?.user_metadata) {
+      setProfileData({
+        business_name: user.user_metadata.business_name || '',
+        city: user.user_metadata.city || '',
+        phone_number: user.user_metadata.phone_number || ''
+      });
+    }
+  }, [user]);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -121,6 +137,47 @@ export const Dashboard = () => {
       price: ''
     });
     setEditingDrug(null);
+    setEditingDrug(null);
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      // 1. Update Supabase Auth Metadata
+      const { error } = await supabase.auth.updateUser({
+        data: profileData
+      });
+      if (error) throw error;
+
+      // 2. Sync changes to all Drug listings
+      const { data: { session } } = await supabase.auth.getSession();
+      await axios.patch(`${API_URL}/api/wholesaler/sync`, {
+        wholesaler_name: profileData.business_name,
+        city: profileData.city,
+        contact_method: profileData.phone_number
+      }, {
+        headers: { Authorization: `Bearer ${session?.access_token}` }
+      });
+
+      toast.success('Profile updated & inventory synced!');
+      setShowProfileModal(false);
+      window.location.reload(); // Reload to reflect changes in UI context
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast.success('Password updated successfully');
+      setShowPasswordModal(false);
+      setNewPassword('');
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   return (
@@ -136,13 +193,23 @@ export const Dashboard = () => {
              </div>
              <span className="text-lg font-extrabold text-slate-900 tracking-tight">PharmaSearch</span>
            </div>
-           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Supplier Portal</span>
+           <div className="flex items-center justify-between">
+             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Supplier Portal</span>
+             <button onClick={() => setShowPasswordModal(true)} className="text-[10px] font-bold text-blue-600 hover:underline">
+               Security
+             </button>
+           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
            {/* Supplier Identity */}
            <div>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Business Profile</h3>
+              <div className="flex items-center justify-between mb-4">
+                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Business Profile</h3>
+                 <button onClick={() => setShowProfileModal(true)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-blue-600 transition">
+                    <Edit2 className="w-3.5 h-3.5" />
+                 </button>
+              </div>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                  <div className="flex items-start gap-3 mb-3">
                     <Building2 className="w-5 h-5 text-slate-400 mt-1" />
@@ -381,6 +448,96 @@ export const Dashboard = () => {
                        className="w-full p-4 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-700 transition shadow-lg shadow-blue-200/50 text-sm"
                     >
                        {editingDrug ? 'Save Changes' : 'Add listing to inventory'}
+                    </button>
+                 </div>
+              </form>
+           </div>
+        </div>
+      )}
+
+      {/* EDIT PROFILE MODAL */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+           <div className="bg-white p-8 rounded-[32px] w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in duration-200">
+              <button 
+                onClick={() => setShowProfileModal(false)}
+                className="absolute right-6 top-6 p-2 rounded-full hover:bg-slate-100 text-slate-400 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <h2 className="text-2xl font-extrabold text-slate-900 mb-6">Edit Business Profile</h2>
+              
+              <form onSubmit={handleProfileUpdate} className="space-y-4">
+                 <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Business Name</label>
+                    <input 
+                       value={profileData.business_name} 
+                       onChange={(e) => setProfileData({...profileData, business_name: e.target.value})}
+                       type="text" required
+                       className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 text-sm font-semibold text-slate-800"
+                    />
+                 </div>
+                 <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">City / Location</label>
+                    <input 
+                       value={profileData.city} 
+                       onChange={(e) => setProfileData({...profileData, city: e.target.value})}
+                       type="text" required
+                       className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 text-sm font-semibold text-slate-800"
+                    />
+                 </div>
+                 <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Phone Number</label>
+                    <input 
+                       value={profileData.phone_number} 
+                       onChange={(e) => setProfileData({...profileData, phone_number: e.target.value})}
+                       type="text" required
+                       className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 text-sm font-semibold text-slate-800"
+                    />
+                 </div>
+                 <div className="pt-4">
+                    <button type="submit" className="w-full p-4 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-700 transition shadow-lg shadow-blue-200/50 text-sm">
+                       Save & Sync Inventory
+                    </button>
+                 </div>
+              </form>
+           </div>
+        </div>
+      )}
+
+      {/* CHANGE PASSWORD MODAL */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+           <div className="bg-white p-8 rounded-[32px] w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in duration-200">
+              <button 
+                onClick={() => setShowPasswordModal(false)}
+                className="absolute right-6 top-6 p-2 rounded-full hover:bg-slate-100 text-slate-400 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="flex items-center gap-3 mb-6">
+                 <div className="p-3 bg-red-50 text-red-600 rounded-2xl">
+                    <ShieldAlert className="w-6 h-6" />
+                 </div>
+                 <h2 className="text-2xl font-extrabold text-slate-900">Security</h2>
+              </div>
+              
+              <form onSubmit={handlePasswordChange} className="space-y-4">
+                 <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">New Password</label>
+                    <input 
+                       value={newPassword} 
+                       onChange={(e) => setNewPassword(e.target.value)}
+                       type="password" required minLength={6}
+                       placeholder="Enter new password"
+                       className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 text-sm font-semibold text-slate-800"
+                    />
+                 </div>
+                 <div className="pt-4">
+                    <button type="submit" className="w-full p-4 rounded-xl font-bold bg-slate-900 text-white hover:bg-slate-800 transition shadow-lg text-sm">
+                       Update Password
                     </button>
                  </div>
               </form>

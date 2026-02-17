@@ -131,6 +131,33 @@ app.patch('/api/drugs/:id', authenticateUser, authorizeSupplier, async (req, res
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Sync Wholesaler Profile (Update all listings)
+app.patch('/api/wholesaler/sync', authenticateUser, authorizeSupplier, async (req, res) => {
+  const { wholesaler_name, city, contact_method } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from('Drugs')
+      .update({ 
+        wholesaler_name, 
+        city, 
+        contact_method 
+      })
+      .eq('user_id', req.user.id) // Update ALL records for this user
+      .select();
+
+    if (error) throw error;
+    res.json({ message: 'Profile synced to inventory', updatedCount: data.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 5. Delete Drug Listing
