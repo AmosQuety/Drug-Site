@@ -128,13 +128,17 @@ export const AdminDashboard = () => {
                       )}
                     </td>
                     <td className="px-8 py-6 text-right">
-                      {supplier.user_metadata?.status !== 'approved' && (
+                      {supplier.user_metadata?.status !== 'approved' ? (
                         <button 
                           onClick={() => approveSupplier(supplier.id)}
                           className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition"
                         >
                           Approve
                         </button>
+                      ) : (
+                        <span className="text-slate-400 text-sm font-medium flex items-center justify-end gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-500" /> Approved
+                        </span>
                       )}
                     </td>
                   </tr>

@@ -29,7 +29,8 @@ export const Login = () => {
     }
   }, [user, role, navigate]);
 
-  if (user && role !== 'supplier' && !isSignUp) {
+  // Only show role selection popup if user has no role yet
+  if (user && !role && !isSignUp) {
     const hasRole = !!role;
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
