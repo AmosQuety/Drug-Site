@@ -1,7 +1,7 @@
 import { Activity, useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../components/context/AuthContext';
-import { Plus, Trash2, Edit2, LogOut, Package, MapPin, Phone, MessageSquare, X, ShieldAlert, CheckCircle, Search, Store, Building2, User } from 'lucide-react';
+import { Plus, Trash2, Edit2, LogOut, Package, MapPin, Phone, MessageSquare, X, ShieldAlert, CheckCircle, Search, Store, Building2, User, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast, Toaster } from 'react-hot-toast';
 import { API_URL } from '../config';
@@ -195,9 +195,6 @@ export const Dashboard = () => {
            </div>
            <div className="flex items-center justify-between">
              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Supplier Portal</span>
-             <button onClick={() => setShowPasswordModal(true)} className="text-[10px] font-bold text-blue-600 hover:underline">
-               Security
-             </button>
            </div>
         </div>
 
@@ -262,10 +259,16 @@ export const Dashboard = () => {
            )}
         </div>
 
-        <div className="p-6 border-t border-slate-100 bg-slate-50/50">
+        <div className="p-6 border-t border-slate-100 bg-slate-50/50 space-y-3">
+           <button 
+             onClick={() => setShowPasswordModal(true)}
+             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm transition border border-transparent hover:border-slate-200"
+           >
+             <Lock className="w-4 h-4" /> Change Password
+           </button>
            <button 
              onClick={logout}
-             className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-xl font-bold text-sm hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition shadow-sm"
+             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition border border-transparent"
            >
              <LogOut className="w-4 h-4" /> Log out
            </button>
@@ -322,26 +325,26 @@ export const Dashboard = () => {
                               </td>
                               <td className="px-6 py-4">
                                  <span className="inline-flex px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold">
-                                    {drug.strength}
+                                    {drug.strength || '—'}
                                  </span>
                               </td>
                               <td className="px-6 py-4">
-                                 <div className="font-medium text-slate-600 text-sm">{drug.dosage_form}</div>
+                                 <div className="font-medium text-slate-600 text-sm">{drug.dosage_form || '—'}</div>
                               </td>
                               <td className="px-6 py-4">
                                  <div className="font-bold text-slate-900 text-sm">
-                                    {drug.price ? `UGX ${Number(drug.price).toLocaleString()}` : 'N/A'}
+                                    {drug.price ? `UGX ${Number(drug.price).toLocaleString()}` : '—'}
                                  </div>
                               </td>
                               <td className="px-6 py-4">
                                  <div className={`text-sm font-bold ${
-                                    new Date(drug.expiry_date) < new Date() ? 'text-red-500' : 'text-slate-700'
+                                    drug.expiry_date && new Date(drug.expiry_date) < new Date() ? 'text-red-500' : 'text-slate-700'
                                  }`}>
-                                    {drug.expiry_date ? new Date(drug.expiry_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                                    {drug.expiry_date ? new Date(drug.expiry_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                                  </div>
                               </td>
                               <td className="px-6 py-4 text-right">
-                                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                 <div className="flex items-center justify-end gap-2">
                                     <button 
                                        onClick={() => startEdit(drug)}
                                        className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition"
