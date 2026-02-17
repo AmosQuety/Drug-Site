@@ -284,8 +284,7 @@ app.get('/api/admin/suppliers/:id/inventory', authenticateUser, authorizeAdmin, 
     const { data, error } = await supabase
       .from('Drugs')
       .select('*')
-      .eq('user_id', id)
-      .order('created_at', { ascending: false });
+      .eq('user_id', id);
     
     if (error) throw error;
     res.json(data || []);
