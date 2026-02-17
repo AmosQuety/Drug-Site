@@ -157,6 +157,23 @@ app.patch('/api/wholesaler/sync', authenticateUser, authorizeSupplier, async (re
 });
 
 // 5. Delete Drug Listing
+app.delete('/api/drugs/:id', authenticateUser, authorizeSupplier, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { error } = await supabase
+      .from('Drugs')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', req.user.id);
+
+    if (error) throw error;
+    res.json({ message: 'Deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- ADMIN ROUTES ---
 
 // 6. Get All Suppliers
@@ -187,18 +204,149 @@ app.patch('/api/admin/suppliers/:id/approve', authenticateUser, authorizeAdmin, 
   }
 });
 
-app.delete('/api/drugs/:id', authenticateUser, authorizeSupplier, async (req, res) => {
-  const { id } = req.params;
-
+// Analytics Dashboard
+app.get('/api/admin/analytics', authenticateUser, authorizeAdmin, async (req, res) => {
   try {
-    const { error } = await supabase
-      .from('Drugs')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', req.user.id);
+    const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+    if (usersError) throw usersError;
 
+    const suppliers = users.filter(u => u.user_metadata?.role === 'supplier');
+    const buyers = users.filter(u => u.user_metadata?.role === 'buyer');
+    
+    const approvedSuppliers = suppliers.filter(s => s.user_metadata?.status === 'approved').length;
+    const pendingSuppliers = suppliers.filter(s => s.user_metadata?.status === 'pending').length;
+    const rejectedSuppliers = suppliers.filter(s => s.user_metadata?.status === 'rejected').length;
+
+    const { count: drugsCount, error: drugsError } = await supabase
+      .from('Drugs')
+      .select('*', { count: 'exact', head: true });
+    if (drugsError) throw drugsError;
+
+    res.json({
+      totalSuppliers: suppliers.length,
+      approvedSuppliers,
+      pendingSuppliers,
+      rejectedSuppliers,
+      totalBuyers: buyers.length,
+      totalDrugs: drugsCount || 0
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Reject/Suspend supplier
+app.patch('/api/admin/suppliers/:id/reject', authenticateUser, authorizeAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(id, {
+      user_metadata: { status: 'rejected' }
+    });
     if (error) throw error;
-    res.json({ message: 'Deleted successfully' });
+    res.json({ message: 'Supplier rejected', user: data.user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Edit supplier details
+app.patch('/api/admin/suppliers/:id/update', authenticateUser, authorizeAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { business_name, license_number, city, contact_method } = req.body;
+    
+    const { data: { user }, error } = await supabaseAdmin.auth.admin.getUserById(id);
+    if (error) throw error;
+
+    const updatedMetadata = {
+      ...user.user_metadata,
+      business_name: business_name || user.user_metadata?.business_name,
+      license_number: license_number || user.user_metadata?.license_number,
+      city: city || user.user_metadata?.city,
+      contact_method: contact_method || user.user_metadata?.contact_method
+    };
+
+    const { data: updated, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(id, {
+      user_metadata: updatedMetadata
+    });
+    if (updateError) throw updateError;
+    
+    res.json({ message: 'Supplier updated', user: updated.user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get supplier's inventory
+app.get('/api/admin/suppliers/:id/inventory', authenticateUser, authorizeAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase
+      .from('Drugs')
+      .select('*')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// List all buyers with stats
+app.get('/api/admin/buyers', authenticateUser, authorizeAdmin, async (req, res) => {
+  try {
+    const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+    if (usersError) throw usersError;
+
+    const buyers = users.filter(u => u.user_metadata?.role === 'buyer');
+    
+    const buyersWithStats = await Promise.all(buyers.map(async (buyer) => {
+      const { count: favCount } = await supabase
+        .from('Favorites')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', buyer.id);
+      
+      const { count: followCount } = await supabase
+        .from('SupplierFollows')
+        .select('*', { count: 'exact', head: true })
+        .eq('buyer_id', buyer.id);
+      
+      return {
+        ...buyer,
+        stats: {
+          favorites: favCount || 0,
+          following: followCount || 0
+        }
+      };
+    }));
+
+    res.json(buyersWithStats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Export suppliers as CSV
+app.get('/api/admin/export/suppliers', authenticateUser, authorizeAdmin, async (req, res) => {
+  try {
+    const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
+    if (error) throw error;
+    
+    const suppliers = users.filter(u => u.user_metadata?.role === 'supplier');
+    
+    const headers = 'Business Name,Email,License,City,Contact,Status,Created At\n';
+    const rows = suppliers.map(s => {
+      const meta = s.user_metadata || {};
+      return `"${meta.business_name || 'N/A'}","${s.email}","${meta.license_number || 'N/A'}","${meta.city || 'N/A'}","${meta.contact_method || 'N/A'}","${meta.status || 'pending'}","${s.created_at}"`;
+    }).join('\n');
+    
+    const csv = headers + rows;
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=suppliers.csv');
+    res.send(csv);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
