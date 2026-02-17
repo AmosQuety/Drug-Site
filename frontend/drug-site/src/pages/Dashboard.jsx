@@ -1,5 +1,5 @@
 import { Activity, useEffect, useState } from 'react';
-import axios from 'axios';
+import axios from '../lib/axios';
 import { useAuth } from '../components/context/AuthContext';
 import { Plus, Trash2, Edit2, LogOut, Package, MapPin, Phone, MessageSquare, X, ShieldAlert, CheckCircle, Search, Store, Building2, User, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';

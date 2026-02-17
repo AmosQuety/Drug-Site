@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import axios from '../lib/axios';
 import { useAuth } from '../components/context/AuthContext';
 import { CheckCircle, ShieldAlert, LogOut, Search, UserCheck, Clock, Mail, MapPin, Users, Package, TrendingUp, Download, Edit, Eye, X, XCircle, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
