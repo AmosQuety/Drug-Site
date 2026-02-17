@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { API_URL } from './config';
 import { useState, useEffect } from 'react';
-import { Search, Pill, Store, LogIn, Phone, MessageSquare, Activity, CheckCircle, MapPin, ShieldCheck, X, Heart, UserPlus } from 'lucide-react';
+import { Search, Pill, Store, LogIn, Phone, MessageSquare, Activity, CheckCircle, MapPin, ShieldCheck, ShieldAlert, X, Heart, UserPlus } from 'lucide-react';
 import axios from 'axios';
 import { Navigate } from 'react-router-dom';
 import { Login } from './pages/Login';
