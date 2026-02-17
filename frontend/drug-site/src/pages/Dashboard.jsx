@@ -22,7 +22,8 @@ export const Dashboard = () => {
     generic_name: '',
     strength: '',
     dosage_form: '',
-    expiry_date: ''
+    expiry_date: '',
+    price: '' // Added price field
   });
 
   const fetchMyDrugs = async () => {
@@ -104,7 +105,8 @@ export const Dashboard = () => {
       generic_name: drug.generic_name,
       strength: drug.strength,
       dosage_form: drug.dosage_form,
-      expiry_date: drug.expiry_date || ''
+      expiry_date: drug.expiry_date || '',
+      price: drug.price || ''
     });
     setShowAddModal(true);
   };
@@ -115,7 +117,8 @@ export const Dashboard = () => {
       generic_name: '',
       strength: '',
       dosage_form: '',
-      expiry_date: ''
+      expiry_date: '',
+      price: ''
     });
     setEditingDrug(null);
   };
@@ -236,6 +239,7 @@ export const Dashboard = () => {
                            <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest w-1/4">Generic Name</th>
                            <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest w-1/6">Strength</th>
                            <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest w-1/6">Dosage Form</th>
+                           <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest w-1/6">Price</th>
                            <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest w-1/6">Expiry Date</th>
                            <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
                         </tr>
@@ -256,6 +260,11 @@ export const Dashboard = () => {
                               </td>
                               <td className="px-6 py-4">
                                  <div className="font-medium text-slate-600 text-sm">{drug.dosage_form}</div>
+                              </td>
+                              <td className="px-6 py-4">
+                                 <div className="font-bold text-slate-900 text-sm">
+                                    {drug.price ? `UGX ${Number(drug.price).toLocaleString()}` : 'N/A'}
+                                 </div>
                               </td>
                               <td className="px-6 py-4">
                                  <div className={`text-sm font-bold ${
@@ -346,6 +355,15 @@ export const Dashboard = () => {
                           className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 text-sm font-semibold text-slate-800 placeholder:font-medium"
                        />
                     </div>
+                 </div>
+
+                 <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Price (UGX)</label>
+                    <input 
+                       name="price" value={formData.price} onChange={handleInputChange}
+                       type="number" placeholder="e.g. 5000"
+                       className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 text-sm font-semibold text-slate-800 placeholder:font-medium"
+                    />
                  </div>
 
                  <div className="space-y-1.5">

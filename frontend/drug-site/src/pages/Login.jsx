@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { Pill, Activity, Search } from 'lucide-react';
+import { Pill, Activity, Search, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../components/context/AuthContext';
 import { toast } from 'react-hot-toast';
 
@@ -9,6 +9,7 @@ export const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState('buyer');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [businessName, setBusinessName] = useState('');
@@ -17,6 +18,7 @@ export const Login = () => {
   const [regNumber, setRegNumber] = useState('');
   const [cadre, setCadre] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null); // Explicit error state for UI alerts
   
   const navigate = useNavigate();
   const { user, role } = useAuth();
@@ -81,6 +83,7 @@ export const Login = () => {
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg(null); // Clear previous errors
 
     try {
       if (isSignUp) {
@@ -124,7 +127,22 @@ export const Login = () => {
         navigate('/dashboard');
       }
     } catch (error) {
-      toast.error(error.message);
+      console.error("Authentication Error Details:", {
+        message: error.message,
+        code: error.code || 'UNKNOWN',
+        details: error,
+        context: isSignUp ? 'SignUp' : 'SignIn'
+      });
+      
+      let friendlyMessage = error.message;
+      if (error.message.includes("Invalid login credentials")) {
+        friendlyMessage = "Incorrect email or password. Please try again.";
+      } else if (error.message.includes("Email not confirmed")) {
+        friendlyMessage = "Please verify your email address before logging in.";
+      }
+      
+      setErrorMsg(friendlyMessage);
+      toast.error(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -171,6 +189,12 @@ export const Login = () => {
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
+          {errorMsg && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="text-sm font-semibold">{errorMsg}</div>
+            </div>
+          )}
           {!user && (
             <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl mb-2">
               <button
@@ -255,11 +279,22 @@ export const Login = () => {
               className="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 transition"
             />
           )}
-          <input 
-            type="password" placeholder="Password" required
-            className="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 transition"
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <div className="relative">
+            <input 
+              type={showPassword ? "text" : "password"} 
+              placeholder="Password" 
+              required
+              className="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 transition pr-12"
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
           
           <button 
             type="submit" 

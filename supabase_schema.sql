@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS public."Drugs" (
     availability TEXT DEFAULT 'In stock',
     city TEXT NOT NULL,
     contact_method TEXT NOT NULL,
+    price NUMERIC, -- Added price field
     last_updated TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     fts_search_vector TSVECTOR GENERATED ALWAYS AS (
@@ -65,6 +66,7 @@ RETURNS TABLE (
     res_generic_name TEXT,
     res_dosage_form TEXT,
     res_strength TEXT,
+    res_price NUMERIC,
     res_score REAL
 ) SECURITY DEFINER
 SET search_path = public
@@ -73,7 +75,7 @@ BEGIN
     PERFORM set_config('pg_trgm.similarity_threshold', '0.2', true);
     RETURN QUERY
     SELECT 
-        tbl.id, tbl.brand_name, tbl.generic_name, tbl.dosage_form, tbl.strength,
+        tbl.id, tbl.brand_name, tbl.generic_name, tbl.dosage_form, tbl.strength, tbl.price,
         GREATEST(similarity(tbl.brand_name, search_term), similarity(tbl.generic_name, search_term)) as s_score
     FROM public."Drugs" AS tbl
     WHERE tbl.brand_name % search_term OR tbl.generic_name % search_term OR tbl.brand_name ILIKE ('%' || search_term || '%') OR tbl.generic_name ILIKE ('%' || search_term || '%')

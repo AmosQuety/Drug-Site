@@ -245,8 +245,11 @@ const ResultsPage = () => {
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight mb-1">{drug.brand_name}</h3>
+                    <p className="text-lg font-extrabold text-blue-600 mb-1">
+                      {drug.price ? `UGX ${Number(drug.price).toLocaleString()}` : 'Price on request'}
+                    </p>
                     <p className="text-slate-500 font-semibold text-sm flex items-center gap-2">
-                      <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs uppercase tracking-wider font-bold">Generic</span> 
+                      <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg text-xs uppercase tracking-wider font-bold">Generic</span> 
                       {drug.generic_name}
                     </p>
                   </div>
