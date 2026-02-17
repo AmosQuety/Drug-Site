@@ -69,7 +69,11 @@ export const Login = () => {
               {hasRole ? 'Register as Supplier' : 'I am a Supplier'}
             </button>
             <button 
-              onClick={() => { supabase.auth.signOut(); window.location.reload(); }}
+              onClick={() => { 
+                supabase.auth.signOut().then(() => {
+                  window.location.href = '/';
+                });
+              }}
               className="w-full bg-slate-100 text-slate-600 p-4 rounded-2xl font-bold hover:bg-slate-200 transition"
             >
               Sign Out

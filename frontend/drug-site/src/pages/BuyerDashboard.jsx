@@ -1,7 +1,7 @@
 import { Activity, useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../components/context/AuthContext';
-import { LogOut, Heart, User, Store, MapPin, Pill, ShieldCheck, Phone, MessageSquare } from 'lucide-react';
+import { LogOut, Heart, User, Store, MapPin, Pill, ShieldCheck, Phone, MessageSquare, X } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import { API_URL } from '../config';
 import { supabase } from '../lib/supabase';
