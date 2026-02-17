@@ -131,11 +131,7 @@ app.patch('/api/drugs/:id', authenticateUser, authorizeSupplier, async (req, res
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+
 });
 
 // 5. Sync Wholesaler Profile (Update all listings)
