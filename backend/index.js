@@ -208,4 +208,110 @@ app.delete('/api/drugs/:id', authenticateUser, authorizeSupplier, async (req, re
   }
 });
 
+// --- BUYER ROUTES ---
+
+// 6. Favorites
+app.get('/api/favorites', authenticateUser, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('Favorites')
+      .select('drug_id, Drugs(*)')
+      .eq('user_id', req.user.id);
+    if (error) throw error;
+    res.json(data.map(f => f.Drugs)); // Return flattened drug objects
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/favorites', authenticateUser, async (req, res) => {
+  const { drug_id } = req.body;
+  try {
+    const { error } = await supabase
+      .from('Favorites')
+      .insert({ user_id: req.user.id, drug_id });
+    if (error) throw error;
+    res.status(201).json({ message: 'Added to favorites' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/favorites/:drug_id', authenticateUser, async (req, res) => {
+  const { drug_id } = req.params;
+  try {
+    const { error } = await supabase
+      .from('Favorites')
+      .delete()
+      .eq('user_id', req.user.id)
+      .eq('drug_id', drug_id);
+    if (error) throw error;
+    res.json({ message: 'Removed from favorites' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7. Following Suppliers
+app.get('/api/following', authenticateUser, async (req, res) => {
+  try {
+    const { data: follows, error } = await supabase
+      .from('SupplierFollows')
+      .select('supplier_id')
+      .eq('buyer_id', req.user.id);
+      
+    if (error) throw error;
+
+    // Get details for these suppliers (using Admin client to access auth.users indirectly or just mock if we stored data in public profile)
+    // Since we don't have a public 'profiles' table yet, we'll try to get their drugs to find their info, or just return IDs.
+    // BETTER APPROACH: Since we sync wholesaler info to Drugs, let's just get one drug from each supplier to get their name/city
+    
+    const supplierIds = follows.map(f => f.supplier_id);
+    if (supplierIds.length === 0) return res.json([]);
+
+    // Get unique wholesaler info from Drugs table for these IDs
+    const { data: suppliers, error: supError } = await supabase
+      .from('Drugs')
+      .select('wholesaler_name, city, contact_method, user_id') // user_id is the supplier_id
+      .in('user_id', supplierIds);
+      
+    if (supError) throw supError;
+
+    // Deduplicate by user_id
+    const uniqueSuppliers = Array.from(new Map(suppliers.map(item => [item.user_id, item])).values());
+    res.json(uniqueSuppliers);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/follow', authenticateUser, async (req, res) => {
+  const { supplier_id } = req.body;
+  try {
+    const { error } = await supabase
+      .from('SupplierFollows')
+      .insert({ buyer_id: req.user.id, supplier_id });
+    if (error) throw error;
+    res.status(201).json({ message: 'Following supplier' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/follow/:supplier_id', authenticateUser, async (req, res) => {
+  const { supplier_id } = req.params;
+  try {
+    const { error } = await supabase
+      .from('SupplierFollows')
+      .delete()
+      .eq('buyer_id', req.user.id)
+      .eq('supplier_id', supplier_id);
+    if (error) throw error;
+    res.json({ message: 'Unfollowed supplier' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => console.log(`🚀 Server on http://localhost:${PORT}`));

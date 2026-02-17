@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { API_URL } from './config';
 import { useState, useEffect } from 'react';
-import { Search, Pill, Store, LogIn, Phone, MessageSquare, Activity, CheckCircle, MapPin, ShieldCheck, X } from 'lucide-react';
+import { Search, Pill, Store, LogIn, Phone, MessageSquare, Activity, CheckCircle, MapPin, ShieldCheck, X, Heart, UserPlus } from 'lucide-react';
 import axios from 'axios';
 import { Navigate } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
+import { BuyerDashboard } from './pages/BuyerDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AuthCallback } from './pages/AuthCallback';
 import { Autocomplete } from './components/Autocomplete';
@@ -13,8 +14,16 @@ import { About } from './pages/About';
 import { AuthProvider, useAuth } from './components/context/AuthContext';
 import { Toaster, toast } from 'react-hot-toast';
 
+// Role Based Dashboard Wrapper
+const RoleBasedDashboard = () => {
+  const { role } = useAuth();
+  if (role === 'buyer') return <BuyerDashboard />;
+  if (role === 'supplier') return <Dashboard />;
+  return <Navigate to="/" replace />;
+};
+
 const ProtectedRoute = ({ children }) => {
-  const { user, role, loading } = useAuth();
+  const { user, loading } = useAuth();
   
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -22,7 +31,7 @@ const ProtectedRoute = ({ children }) => {
     </div>
   );
 
-  if (!user || role !== 'supplier') {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
@@ -94,6 +103,13 @@ const HomePage = () => {
               >
                 <Activity className="w-4 h-4 text-blue-600" /> Dashboard
               </button>
+            ) : role === 'buyer' ? (
+              <button 
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl shadow-sm border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition"
+              >
+                <Heart className="w-4 h-4 text-red-500" /> My Essentials
+              </button>
             ) : null}
           </div>
         </div>
@@ -150,9 +166,96 @@ const ResultsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showGuestPrompt, setShowGuestPrompt] = useState(false);
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const searchParams = new URLSearchParams(window.location.search);
   const query = searchParams.get('q');
+  
+  // State for favorites and following (to toggle UI immediately)
+  const [favorites, setFavorites] = useState(new Set());
+  const [following, setFollowing] = useState(new Set());
+
+  // Fetch user's existing favorites/follows to highlight buttons
+  useEffect(() => {
+    if (user && role === 'buyer') {
+      const fetchUserData = async () => {
+         try {
+           const { data: { session } } = await supabase.auth.getSession();
+           const headers = { Authorization: `Bearer ${session?.access_token}` };
+           const [favRes, followRes] = await Promise.all([
+             axios.get(`${API_URL}/api/favorites`, { headers }),
+             axios.get(`${API_URL}/api/following`, { headers })
+           ]);
+           setFavorites(new Set(favRes.data.map(d => d.id)));
+           setFollowing(new Set(followRes.data.map(s => s.user_id)));
+         } catch (err) {
+           console.error(err);
+         }
+      };
+      fetchUserData();
+    }
+  }, [user, role]);
+
+  const toggleFavorite = async (drug) => {
+    if (!user) { setShowGuestPrompt(true); return; }
+    if (role !== 'buyer') return; // Suppliers/Admins don't have favorites
+
+    const isFav = favorites.has(drug.id);
+    const newFavs = new Set(favorites);
+    
+    // Optimistic Update
+    if (isFav) newFavs.delete(drug.id);
+    else newFavs.add(drug.id);
+    setFavorites(newFavs);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = { Authorization: `Bearer ${session?.access_token}` };
+      
+      if (isFav) {
+        await axios.delete(`${API_URL}/api/favorites/${drug.id}`, { headers });
+        toast.success('Removed from favorites');
+      } else {
+        await axios.post(`${API_URL}/api/favorites`, { drug_id: drug.id }, { headers });
+        toast.success('Saved to dashboard');
+      }
+    } catch (err) {
+      toast.error('Action failed');
+      // Revert on error
+      if (isFav) newFavs.add(drug.id);
+      else newFavs.delete(drug.id);
+      setFavorites(newFavs);
+    }
+  };
+
+  const toggleFollow = async (supplierId) => {
+    if (!user) { setShowGuestPrompt(true); return; }
+    if (role !== 'buyer') return;
+
+    const isFollowing = following.has(supplierId);
+    const newFollowing = new Set(following);
+    
+    if (isFollowing) newFollowing.delete(supplierId);
+    else newFollowing.add(supplierId);
+    setFollowing(newFollowing);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = { Authorization: `Bearer ${session?.access_token}` };
+      
+      if (isFollowing) {
+        await axios.delete(`${API_URL}/api/follow/${supplierId}`, { headers });
+        toast.success('Unfollowed supplier');
+      } else {
+        await axios.post(`${API_URL}/api/follow`, { supplier_id: supplierId }, { headers });
+        toast.success('Following supplier');
+      }
+    } catch (err) {
+      toast.error('Action failed');
+       if (isFollowing) newFollowing.add(supplierId);
+       else newFollowing.delete(supplierId);
+       setFollowing(newFollowing);
+    }
+  };
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -253,9 +356,18 @@ const ResultsPage = () => {
                       {drug.generic_name}
                     </p>
                   </div>
-                  <span className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide ${drug.availability === 'In stock' ? 'bg-green-50 text-green-700 ring-1 ring-green-100' : 'bg-red-50 text-red-700 ring-1 ring-red-100'}`}>
-                    {drug.availability}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide ${drug.availability === 'In stock' ? 'bg-green-50 text-green-700 ring-1 ring-green-100' : 'bg-red-50 text-red-700 ring-1 ring-red-100'}`}>
+                      {drug.availability}
+                    </span>
+                    {/* Favorite Button */}
+                    <button 
+                      onClick={() => toggleFavorite(drug)}
+                      className={`p-2 rounded-full transition ${favorites.has(drug.id) ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                    >
+                      <Heart className={`w-5 h-5 ${favorites.has(drug.id) ? 'fill-current' : ''}`} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Grid for Key Details */}
@@ -297,6 +409,13 @@ const ResultsPage = () => {
                        <div className="flex items-center gap-2 mb-1">
                           <Store className="w-5 h-5 text-blue-600" />
                           <span className="text-lg font-bold text-slate-900">{drug.wholesaler_name}</span>
+                          {/* Follow Button */}
+                          <button 
+                             onClick={() => toggleFollow(drug.user_id)}
+                             className={`text-[10px] font-bold px-2 py-1 rounded-md transition ${following.has(drug.user_id) ? 'bg-slate-200 text-slate-600' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+                          >
+                             {following.has(drug.user_id) ? 'Following' : '+ Follow'}
+                          </button>
                        </div>
                        <div className="flex items-center gap-2 text-sm font-medium text-slate-500 ml-0.5">
                           <MapPin className="w-4 h-4" /> {drug.city}
@@ -348,11 +467,19 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           
-          <Route 
+
+          {/* Separate Logic within ProtectedRoute to handle role-based redirection if needed, 
+              but for now ProtectedRoute just checks if user matches role prop or if we pass nothing it renders children.
+              Actually, the current ProtectedRoute enforces 'supplier'. We need to fix that.
+          */}
+           <Route 
             path="/dashboard" 
             element={
               <ProtectedRoute>
-                <Dashboard />
+                 {/* This is a bit tricky with the current router setup. 
+                     Ideally we should have a wrapper describing which dashboard to load based on role 
+                 */}
+                 <RoleBasedDashboard />
               </ProtectedRoute>
             } 
           />
