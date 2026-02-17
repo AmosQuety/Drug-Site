@@ -209,7 +209,12 @@ app.delete('/api/drugs/:id', authenticateUser, authorizeSupplier, async (req, re
 // 6. Favorites
 app.get('/api/favorites', authenticateUser, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const token = req.headers.authorization?.split(' ')[1];
+    const userSupabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
+    
+    const { data, error } = await userSupabase
       .from('Favorites')
       .select('drug_id, Drugs(*)')
       .eq('user_id', req.user.id);
@@ -223,7 +228,12 @@ app.get('/api/favorites', authenticateUser, async (req, res) => {
 app.post('/api/favorites', authenticateUser, async (req, res) => {
   const { drug_id } = req.body;
   try {
-    const { error } = await supabase
+    const token = req.headers.authorization?.split(' ')[1];
+    const userSupabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
+    
+    const { error } = await userSupabase
       .from('Favorites')
       .insert({ user_id: req.user.id, drug_id });
     if (error) throw error;
@@ -236,7 +246,12 @@ app.post('/api/favorites', authenticateUser, async (req, res) => {
 app.delete('/api/favorites/:drug_id', authenticateUser, async (req, res) => {
   const { drug_id } = req.params;
   try {
-    const { error } = await supabase
+    const token = req.headers.authorization?.split(' ')[1];
+    const userSupabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
+    
+    const { error } = await userSupabase
       .from('Favorites')
       .delete()
       .eq('user_id', req.user.id)
@@ -251,24 +266,25 @@ app.delete('/api/favorites/:drug_id', authenticateUser, async (req, res) => {
 // 7. Following Suppliers
 app.get('/api/following', authenticateUser, async (req, res) => {
   try {
-    const { data: follows, error } = await supabase
+    const token = req.headers.authorization?.split(' ')[1];
+    const userSupabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
+    
+    const { data: follows, error } = await userSupabase
       .from('SupplierFollows')
       .select('supplier_id')
       .eq('buyer_id', req.user.id);
       
     if (error) throw error;
 
-    // Get details for these suppliers (using Admin client to access auth.users indirectly or just mock if we stored data in public profile)
-    // Since we don't have a public 'profiles' table yet, we'll try to get their drugs to find their info, or just return IDs.
-    // BETTER APPROACH: Since we sync wholesaler info to Drugs, let's just get one drug from each supplier to get their name/city
-    
     const supplierIds = follows.map(f => f.supplier_id);
     if (supplierIds.length === 0) return res.json([]);
 
     // Get unique wholesaler info from Drugs table for these IDs
     const { data: suppliers, error: supError } = await supabase
       .from('Drugs')
-      .select('wholesaler_name, city, contact_method, user_id') // user_id is the supplier_id
+      .select('wholesaler_name, city, contact_method, user_id')
       .in('user_id', supplierIds);
       
     if (supError) throw supError;
@@ -285,7 +301,12 @@ app.get('/api/following', authenticateUser, async (req, res) => {
 app.post('/api/follow', authenticateUser, async (req, res) => {
   const { supplier_id } = req.body;
   try {
-    const { error } = await supabase
+    const token = req.headers.authorization?.split(' ')[1];
+    const userSupabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
+    
+    const { error } = await userSupabase
       .from('SupplierFollows')
       .insert({ buyer_id: req.user.id, supplier_id });
     if (error) throw error;
@@ -298,7 +319,12 @@ app.post('/api/follow', authenticateUser, async (req, res) => {
 app.delete('/api/follow/:supplier_id', authenticateUser, async (req, res) => {
   const { supplier_id } = req.params;
   try {
-    const { error } = await supabase
+    const token = req.headers.authorization?.split(' ')[1];
+    const userSupabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
+    
+    const { error } = await userSupabase
       .from('SupplierFollows')
       .delete()
       .eq('buyer_id', req.user.id)
