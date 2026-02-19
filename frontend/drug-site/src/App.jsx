@@ -364,9 +364,9 @@ const ResultsPage = () => {
                     {/* Favorite Button */}
                     <button 
                       onClick={() => toggleFavorite(drug)}
-                      className={`p-2 rounded-full transition ${favorites.has(drug.id) ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                      className={`p-3 rounded-full transition ${favorites.has(drug.id) ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                     >
-                      <Heart className={`w-5 h-5 ${favorites.has(drug.id) ? 'fill-current' : ''}`} />
+                      <Heart className={`w-6 h-6 ${favorites.has(drug.id) ? 'fill-current' : ''}`} />
                     </button>
                   </div>
                 </div>
@@ -413,7 +413,7 @@ const ResultsPage = () => {
                           {/* Follow Button */}
                           <button 
                              onClick={() => toggleFollow(drug.user_id)}
-                             className={`text-[10px] font-bold px-2 py-1 rounded-md transition ${following.has(drug.user_id) ? 'bg-slate-200 text-slate-600' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+                             className={`text-xs font-bold px-3 py-1.5 rounded-md transition ${following.has(drug.user_id) ? 'bg-slate-200 text-slate-600' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
                           >
                              {following.has(drug.user_id) ? 'Following' : '+ Follow'}
                           </button>

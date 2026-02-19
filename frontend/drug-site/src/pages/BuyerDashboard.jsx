@@ -10,6 +10,7 @@ export const BuyerDashboard = () => {
   const [favorites, setFavorites] = useState([]);
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -61,11 +62,23 @@ export const BuyerDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-slate-50 overflow-hidden relative">
       <Toaster position="top-center" />
       
+      {/* MOBILE OVERLAY */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-30 lg:hidden animate-in fade-in duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* SIDEBAR */}
-      <aside className="w-72 bg-white border-r border-slate-200 flex flex-col relative z-20">
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex flex-col z-40
+        transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
         <div className="p-8 border-b border-slate-100">
            <div className="flex items-center gap-2 mb-1">
              <div className="bg-blue-600 p-1.5 rounded-lg">
@@ -82,10 +95,10 @@ export const BuyerDashboard = () => {
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">My Profile</h3>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                  <div className="flex items-start gap-3 mb-3">
-                    <User className="w-5 h-5 text-slate-400 mt-1" />
-                    <div>
-                       <p className="font-bold text-slate-900 leading-tight">{user?.email}</p>
-                       <p className="text-xs text-slate-500 mt-1">{user?.user_metadata?.cadre || 'Healthcare Professional'}</p>
+                    <User className="w-5 h-5 text-slate-400 mt-1 shrink-0" />
+                    <div className="min-w-0">
+                       <p className="font-bold text-slate-900 leading-tight truncate" title={user?.email}>{user?.email}</p>
+                       <p className="text-xs text-slate-500 mt-1 truncate">{user?.user_metadata?.cadre || 'Healthcare Professional'}</p>
                     </div>
                  </div>
               </div>
@@ -107,9 +120,18 @@ export const BuyerDashboard = () => {
          <div className="max-w-5xl mx-auto">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mb-8">
-               <div>
-                  <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">My Essentials</h1>
-                  <p className="text-slate-500 font-medium">Track your favorite medicines and suppliers.</p>
+               <div className="flex items-center gap-4 w-full sm:w-auto">
+                  {/* MOBILE MENU TOGGLE */}
+                  <button 
+                    onClick={() => setIsSidebarOpen(true)}
+                    className="lg:hidden p-2 rounded-xl bg-white border border-slate-200 text-slate-600 shadow-sm"
+                  >
+                    <Activity className="w-6 h-6" />
+                  </button>
+                  <div>
+                     <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-1 sm:mb-2">My Essentials</h1>
+                     <p className="text-slate-500 font-medium text-sm sm:text-base">Track your favorite medicines and suppliers.</p>
+                  </div>
                </div>
                <button 
                  onClick={() => window.location.href = '/'}
