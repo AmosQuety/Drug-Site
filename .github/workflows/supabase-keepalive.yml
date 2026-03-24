@@ -18,20 +18,34 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
-            echo "Missing SUPABASE_URL or SUPABASE_ANON_KEY secret."
+            echo "::error::Missing SUPABASE_URL or SUPABASE_ANON_KEY secret."
             exit 1
           fi
 
-          STATUS=$(curl -sS -o /tmp/resp.txt -w "%{http_code}" \
+          # Remove trailing slash from URL if present
+          CLEAN_URL=$(echo "$SUPABASE_URL" | sed 's/\/*$//')
+          
+          echo "Pinging: $CLEAN_URL"
+
+          # Perform the ping and capture status and response body
+          RESPONSE_FILE="/tmp/resp.txt"
+          STATUS=$(curl -sS -o "$RESPONSE_FILE" -w "%{http_code}" \
             -H "apikey: ${SUPABASE_ANON_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
-            "${SUPABASE_URL}/rest/v1/Drugs?select=id&limit=1")
+            "${CLEAN_URL}/rest/v1/Drugs?select=id&limit=1")
 
           echo "HTTP status: $STATUS"
-          cat /tmp/resp.txt
-
+          
           if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
-            echo "Supabase keepalive ping failed."
+            echo "::error::Supabase keepalive ping failed (Status: $STATUS)."
+            echo "--- Server Response ---"
+            cat "$RESPONSE_FILE"
+            echo -e "\n-----------------------"
+            
+            if [ "$STATUS" -eq 503 ]; then
+              echo "::warning::Project might be PAUSED. Please resume it manually in the Supabase dashboard."
+            fi
+            
             exit 1
           fi
 
